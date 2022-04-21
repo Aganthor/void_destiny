@@ -1,6 +1,13 @@
+/// Void destiny is a RPG roguelike game written in rust with bevy!
+///
+///  Some crates to see / use :
+///     - https://github.com/StarArawn/bevy_ecs_tilemap
+///     - https://github.com/MrGVSV/bevy_tileset
+/// 
+
 use bevy::prelude::*;
 
-use benimator::{AnimationPlugin};
+use benimator::AnimationPlugin;
 
 mod constants;
 use constants::*;
