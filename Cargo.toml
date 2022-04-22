@@ -14,3 +14,4 @@ opt-level = 3
 [dependencies]
 bevy = {version = "0.7", features = ["dynamic"] }
 benimator = "3.0.0"
+bevy_ecs_tilemap = { git = "https://github.com/StarArawn/bevy_ecs_tilemap" }
