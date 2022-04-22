@@ -40,18 +40,23 @@ impl Plugin for PlayerPlugin {
 fn move_player(
     keyboard_input: Res<Input<KeyCode>>,
     animations: Res<PlayerAnimations>,
-    mut query: Query<&mut Handle<SpriteSheetAnimation>>,
+    time: Res<Time>,
+    mut query: Query<(&mut Handle<SpriteSheetAnimation>, &mut Transform)>,
 ) {
-    let mut animation = query.single_mut();
+    let (mut animation, mut transform) = query.single_mut();
 
     if keyboard_input.pressed(KeyCode::A) {
         *animation = animations.left.clone();
+        transform.translation.x -= 100. * time.delta_seconds();
     } else if keyboard_input.pressed(KeyCode::D) {
         *animation = animations.right.clone();
+        transform.translation.x += 100. * time.delta_seconds();
     } else if keyboard_input.pressed(KeyCode::S) {
         *animation = animations.down.clone();
+        transform.translation.y -= 100. * time.delta_seconds();
     } else if keyboard_input.pressed(KeyCode::W) {            
         *animation = animations.up.clone();
+        transform.translation.y += 100. * time.delta_seconds();
     }
 }
 
