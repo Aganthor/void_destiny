@@ -4,6 +4,8 @@
 ///     - https://github.com/StarArawn/bevy_ecs_tilemap
 ///     - https://github.com/MrGVSV/bevy_tileset
 /// 
+/// Some nice sprite : https://toen.itch.io/toens-medieval-strategy
+/// 
 
 use bevy::prelude::*;
 
