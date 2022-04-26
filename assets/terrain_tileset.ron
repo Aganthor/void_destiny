@@ -1,0 +1,17 @@
+(
+    name: Some("Overworld_Terrain_Tileset"),
+    id: 0,
+    tiles: {
+        0: "../tiles/deep_water.ron",
+        1: "../tiles/dirt.ron",
+        2: "../tiles/forest.ron",
+        3: "../tiles/grass.ron",
+        4: "../tiles/mountain.ron",
+        5: "../tiles/rock.ron",
+        6: "../tiles/sand.ron",
+        7: "../tiles/savannah.ron",
+        8: "../tiles/shallow_water.ron",
+        9: "../tiles/shore.ron",
+        10: "../tiles/snow.ron",
+    }
+)

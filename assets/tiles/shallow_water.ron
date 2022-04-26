@@ -1,0 +1,4 @@
+(
+    name: "shallow_water"
+    tile: Standard("shallow_water.png")
+)
