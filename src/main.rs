@@ -17,6 +17,9 @@ use constants::*;
 mod player;
 use player::*;
 
+mod map;
+use map::*;
+
 fn main() {
     App::new()
         .insert_resource(ClearColor(BG_COLOR))
@@ -29,6 +32,7 @@ fn main() {
         .add_plugins(DefaultPlugins)
         .add_plugin(AnimationPlugin::default())
         .add_plugin(PlayerPlugin)
+        .add_plugin(MapPlugin)
         .add_startup_system(setup_camera)
         .run();
 }
