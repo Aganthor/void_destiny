@@ -15,3 +15,6 @@ opt-level = 3
 bevy = {version = "0.7", features = ["dynamic"] }
 benimator = "3.0.0"
 bevy_ecs_tilemap = { git = "https://github.com/StarArawn/bevy_ecs_tilemap" }
+simdnoise = "3.1.6"
+rand = "0.8.5"
+bevy_tileset = "0.4"
