@@ -9,7 +9,9 @@ pub struct MapPlugin;
 impl Plugin for MapPlugin {
     fn build(&self, app: &mut App) {
         app
+            .init_resource::<TerrainTileSet>()
             .add_plugin(TilemapPlugin)
+            .add_plugin(TilesetPlugin::default())
             .add_startup_system_to_stage(StartupStage::PreStartup, load_tiles)
             .add_startup_system(setup)
             .add_system(set_texture_filters_to_nearest);
@@ -17,11 +19,11 @@ impl Plugin for MapPlugin {
 }
 
 #[derive(Default)]
-struct TerrainTileSet {
+pub struct TerrainTileSet {
     handle: Option<Handle<Tileset>>,
 }
 
-fn load_tiles(mut terrain_tileset: ResMut<TerrainTileSet>, asset_server: Res<AssetServer>) {
+pub fn load_tiles(mut terrain_tileset: ResMut<TerrainTileSet>, asset_server: Res<AssetServer>) {
     terrain_tileset.handle = Some(asset_server.load("terrain_tileset.ron"));
 
 }
