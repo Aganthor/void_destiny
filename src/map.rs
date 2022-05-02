@@ -31,6 +31,7 @@ pub fn load_tiles(mut terrain_tileset: ResMut<TerrainTileSet>, asset_server: Res
 fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
+    terrain_tileset: Res<TerrainTileSet>,
     mut map_query: MapQuery,
 ) {
     let texture_handle = asset_server.load("tiles/terrain_tiles.png");
@@ -62,15 +63,15 @@ fn setup(
         .with_seed(seed)
         .generate_scaled(0.0, 1.0);
 
-    layer_builder.for_each_tiles_mut(|tile_entity, tile_data| {
+    // layer_builder.for_each_tiles_mut(|tile_entity, tile_data| {
         
-        // Tile entity might not be there yet. Create it.
-        if tile_entity.is_none() {
-            *tile_entity = Some(commands.spawn().id());
-        }
-        commands
-            .entity(tile_entity.unwrap());
-    });
+    //     // Tile entity might not be there yet. Create it.
+    //     if tile_entity.is_none() {
+    //         *tile_entity = Some(commands.spawn().id());
+    //     }
+    //     commands
+    //         .entity(tile_entity.unwrap());
+    // });
 
     layer_builder.set_all(TileBundle::default());
 
