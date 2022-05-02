@@ -6,6 +6,9 @@
 /// 
 /// Some nice sprite : https://toen.itch.io/toens-medieval-strategy
 /// 
+/// TODO:
+/// - Save world map size in a ron file
+/// 
 
 use bevy::prelude::*;
 
