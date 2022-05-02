@@ -18,3 +18,4 @@ bevy_ecs_tilemap = { git = "https://github.com/StarArawn/bevy_ecs_tilemap" }
 simdnoise = "3.1.6"
 rand = "0.8.5"
 bevy_tileset = "0.4"
+bevy_asset_ron = "0.4"
