@@ -18,7 +18,7 @@ impl Plugin for MapPlugin {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, Resource)]
 pub struct TerrainTileSet {
     handle: Option<Handle<Tileset>>,
 }
