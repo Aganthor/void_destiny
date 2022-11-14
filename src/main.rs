@@ -12,7 +12,7 @@
 
 use bevy::prelude::*;
 
-use benimator::AnimationPlugin;
+//use benimator::AnimationPlugin;
 
 mod constants;
 use constants::*;
@@ -33,7 +33,7 @@ fn main() {
             ..default()
         })
         .add_plugins(DefaultPlugins)
-        .add_plugin(AnimationPlugin::default())
+        //.add_plugin(AnimationPlugin::default())
         .add_plugin(PlayerPlugin)
         .add_plugin(MapPlugin)
         .add_startup_system(setup_camera)

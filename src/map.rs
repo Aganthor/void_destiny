@@ -32,7 +32,7 @@ fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     terrain_tileset: Res<TerrainTileSet>,
-    mut map_query: MapQuery,
+//    mut map_query: MapQuery,
 ) {
     let texture_handle = asset_server.load("tiles/terrain_tiles.png");
 
