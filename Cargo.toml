@@ -12,10 +12,10 @@ opt-level = 1
 opt-level = 3
 
 [dependencies]
-bevy = {version = "0.7", features = ["dynamic"] }
-benimator = "3.0.0"
-bevy_ecs_tilemap = { git = "https://github.com/StarArawn/bevy_ecs_tilemap" }
+bevy = {version = "0.9.0", features = ["dynamic"] }
+benimator = "4.1.0"
+bevy_ecs_tilemap = { version = "0.9.0" }
 simdnoise = "3.1.6"
 rand = "0.8.5"
-bevy_tileset = "0.4"
-bevy_asset_ron = "0.4"
+bevy_tileset = "0.6.0"
+#bevy_asset_ron = "0.4"
