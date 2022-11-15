@@ -1,8 +1,14 @@
-use bevy::{prelude::*, render::render_resource::TextureUsages};
+use bevy::{
+    prelude::*, 
+    render::render_resource::TextureUsages,
+};
 use bevy_ecs_tilemap::prelude::*;
 use rand::prelude::*;
 use simdnoise::*;
 use bevy_tileset::prelude::*;
+
+use crate::constants::*;
+
 
 pub struct MapPlugin;
 
@@ -32,30 +38,20 @@ fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     terrain_tileset: Res<TerrainTileSet>,
-//    mut map_query: MapQuery,
+    tilesets: Tilesets,
 ) {
     let texture_handle = asset_server.load("tiles/terrain_tiles.png");
 
-    // Create map entity and component
-    let map_entity = commands.spawn().id();
-    let mut map = Map::new(0u16, map_entity);
+    let tilemap_size = TilemapSize { x: OVERWOLRD_SIZE_WIDTH, y: OVERWOLRD_SIZE_HEIGHT} ;
 
-    let (mut layer_builder, _) = LayerBuilder::new(
-        &mut commands,
-        LayerSettings::new(
-            MapSize(2, 2),
-            ChunkSize(8, 8),
-            TileSize(32.0, 32.0),
-            TextureSize(374.0, 32.0),
-        ),
-        0u16,
-        0u16,
-    );
+    let tilemap_entity = commands.spawn_empty().id();
+
+    let mut tile_storage = TileStorage::empty(tilemap_size);
 
     let mut rng = rand::thread_rng();
     let seed = rng.gen();
 
-    let noise = NoiseBuilder::fbm_2d(16, 16)
+    let noise = NoiseBuilder::fbm_2d(OVERWOLRD_SIZE_WIDTH as usize, OVERWOLRD_SIZE_HEIGHT as usize)
         .with_freq(0.03)
         .with_gain(2.5)
         .with_lacunarity(0.55)
@@ -63,27 +59,55 @@ fn setup(
         .with_seed(seed)
         .generate_scaled(0.0, 1.0);
 
-    // layer_builder.for_each_tiles_mut(|tile_entity, tile_data| {
-        
-    //     // Tile entity might not be there yet. Create it.
-    //     if tile_entity.is_none() {
-    //         *tile_entity = Some(commands.spawn().id());
-    //     }
-    //     commands
-    //         .entity(tile_entity.unwrap());
-    // });
+    for x in 0..tilemap_size.x {
+        for y in 0..tilemap_size.y {
+            let tile_pos = TilePos { x, y };
+            let index = x + OVERWOLRD_SIZE_WIDTH * y;
+            let noise_value = noise.get(index as usize).unwrap();
+            let mut texture_id = 0;
+            if noise_value < &0.1 {
+                texture_id = 0;
+            } else if noise_value < &0.2 {
+                texture_id = 1;
+            } else if noise_value < &0.3 {
+                texture_id = 2;
+            } else if noise_value < &0.5 {
+                texture_id = 3;
+            } else if noise_value < &0.8 {
+                texture_id = 4;
+            } else if noise_value < &0.9 {
+                texture_id = 5;
+            } else if noise_value < &0.95 {
+                texture_id = 6;
+            } else {
+                texture_id = 7;
+            }
+            let tile_entity = commands
+                .spawn(TileBundle {
+                    position: tile_pos,
+                    tilemap_id: TilemapId(tilemap_entity),
+                    texture_index: TileTextureIndex { 0: terrain_tileset.get_by_id(&texture_id) },
+                    ..Default::default()
+                })
+                .id();
+            tile_storage.set(&tile_pos, tile_entity);
+        }
+    }
 
-    layer_builder.set_all(TileBundle::default());
+    let tile_size = TilemapTileSize { x: 32.0, y: 32.0 };
+    let grid_size = tile_size.into();
+    let map_type = TilemapType::default();
 
-    let layer_entity = map_query.build_layer(&mut commands, layer_builder, texture_handle);
-
-    map.add_layer(&mut commands, 0u16, layer_entity);
-
-    commands
-        .entity(map_entity)
-        .insert(map)
-        .insert(Transform::from_xyz(-128.0, -128.0, 0.0))
-        .insert(GlobalTransform::default());
+    commands.entity(tilemap_entity).insert(TilemapBundle {
+        grid_size,
+        map_type,
+        size: tilemap_size,
+        storage: tile_storage,
+        texture: TilemapTexture::Single(texture_handle),
+        tile_size,
+        transform: get_tilemap_center_transform(&tilemap_size, &grid_size, &map_type, 0.0),
+        ..Default::default()
+    });
 }
 
 pub fn set_texture_filters_to_nearest(
