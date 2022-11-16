@@ -31,7 +31,6 @@ pub struct TerrainTileSet {
 
 pub fn load_tiles(mut terrain_tileset: ResMut<TerrainTileSet>, asset_server: Res<AssetServer>) {
     terrain_tileset.handle = Some(asset_server.load("terrain_tileset.ron"));
-
 }
 
 fn setup(
@@ -42,16 +41,15 @@ fn setup(
 ) {
     let texture_handle = asset_server.load("tiles/terrain_tiles.png");
 
-    let tilemap_size = TilemapSize { x: OVERWOLRD_SIZE_WIDTH, y: OVERWOLRD_SIZE_HEIGHT} ;
-
+    let tilemap_size = TilemapSize { x: OVERWORLD_SIZE_WIDTH, y: OVERWORLD_SIZE_HEIGHT} ;
     let tilemap_entity = commands.spawn_empty().id();
-
     let mut tile_storage = TileStorage::empty(tilemap_size);
 
+    // Generate noise for the map.
     let mut rng = rand::thread_rng();
     let seed = rng.gen();
 
-    let noise = NoiseBuilder::fbm_2d(OVERWOLRD_SIZE_WIDTH as usize, OVERWOLRD_SIZE_HEIGHT as usize)
+    let noise = NoiseBuilder::fbm_2d(OVERWORLD_SIZE_WIDTH as usize, OVERWORLD_SIZE_HEIGHT as usize)
         .with_freq(0.03)
         .with_gain(2.5)
         .with_lacunarity(0.55)
@@ -59,10 +57,18 @@ fn setup(
         .with_seed(seed)
         .generate_scaled(0.0, 1.0);
 
+    // For each tile, create the proper entity with the corresponding texture according to it's
+    // height.
+
+    let tileset_handle = terrain_tileset.handle.as_ref().unwrap();
+    let tileset = tilesets.get_by_name("Overworld_Terrain_Tileset");
+
+    println!("tileset = {:#?}", tileset);
+
     for x in 0..tilemap_size.x {
         for y in 0..tilemap_size.y {
             let tile_pos = TilePos { x, y };
-            let index = x + OVERWOLRD_SIZE_WIDTH * y;
+            let index = x + OVERWORLD_SIZE_WIDTH * y;
             let noise_value = noise.get(index as usize).unwrap();
             let mut texture_id = 0;
             if noise_value < &0.1 {
@@ -86,7 +92,7 @@ fn setup(
                 .spawn(TileBundle {
                     position: tile_pos,
                     tilemap_id: TilemapId(tilemap_entity),
-                    texture_index: TileTextureIndex { 0: terrain_tileset.get_by_id(&texture_id) },
+                    texture_index: TileTextureIndex { 0: texture_id },
                     ..Default::default()
                 })
                 .id();
