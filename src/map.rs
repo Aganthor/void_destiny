@@ -49,7 +49,6 @@ fn setup(
             let tile_pos = TilePos { x, y };
             let index = x + OVERWORLD_SIZE_WIDTH * y;
             let noise_value = noise.get(index as usize).unwrap();
-            println!("noise value at {}, {} is {}", x, y, noise_value);
             let mut texture_id = 0;
             if noise_value < &0.1 {
                 texture_id = 0;
