@@ -5,7 +5,6 @@ use bevy::{
 use bevy_ecs_tilemap::prelude::*;
 use rand::prelude::*;
 use simdnoise::*;
-use bevy_tileset::prelude::*;
 
 use crate::constants::*;
 
@@ -15,31 +14,17 @@ pub struct MapPlugin;
 impl Plugin for MapPlugin {
     fn build(&self, app: &mut App) {
         app
-            .init_resource::<TerrainTileSet>()
             .add_plugin(TilemapPlugin)
-            .add_plugin(TilesetPlugin::default())
-            .add_startup_system_to_stage(StartupStage::PreStartup, load_tiles)
             .add_startup_system(setup)
             .add_system(set_texture_filters_to_nearest);
     }
 }
 
-#[derive(Default, Resource)]
-pub struct TerrainTileSet {
-    handle: Option<Handle<Tileset>>,
-}
-
-pub fn load_tiles(mut terrain_tileset: ResMut<TerrainTileSet>, asset_server: Res<AssetServer>) {
-    terrain_tileset.handle = Some(asset_server.load("terrain_tileset.ron"));
-}
-
 fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    terrain_tileset: Res<TerrainTileSet>,
-    tilesets: Tilesets,
 ) {
-    let texture_handle = asset_server.load("tiles/terrain_tiles.png");
+    let texture_handle = asset_server.load("tiles/overworld_tiles.png");
 
     let tilemap_size = TilemapSize { x: OVERWORLD_SIZE_WIDTH, y: OVERWORLD_SIZE_HEIGHT} ;
     let tilemap_entity = commands.spawn_empty().id();
@@ -59,17 +44,12 @@ fn setup(
 
     // For each tile, create the proper entity with the corresponding texture according to it's
     // height.
-
-    let tileset_handle = terrain_tileset.handle.as_ref().unwrap();
-    let tileset = tilesets.get_by_name("Overworld_Terrain_Tileset");
-
-    println!("tileset = {:#?}", tileset);
-
     for x in 0..tilemap_size.x {
         for y in 0..tilemap_size.y {
             let tile_pos = TilePos { x, y };
             let index = x + OVERWORLD_SIZE_WIDTH * y;
             let noise_value = noise.get(index as usize).unwrap();
+            println!("noise value at {}, {} is {}", x, y, noise_value);
             let mut texture_id = 0;
             if noise_value < &0.1 {
                 texture_id = 0;
