@@ -7,6 +7,8 @@ use bevy::{
 
 use benimator::*;
 
+// https://github.com/jcornaz/benimator/blob/main/examples/bevy.rs
+
 const ANIMATION_DURATION: u64 = 200;
 
 #[derive(Component)]
@@ -15,6 +17,7 @@ enum Direction {
     Down,
     Left,
     Right,
+    Standing,
 }
 
 #[derive(Default)]
@@ -23,6 +26,7 @@ struct PlayerAnimations {
     right: Handle<SpriteSheetAnimation>,
     up: Handle<SpriteSheetAnimation>,
     down: Handle<SpriteSheetAnimation>,
+    standing: Handle<SpriteSheetAnimation>,
 }
 
 pub struct PlayerPlugin;
@@ -57,6 +61,8 @@ fn move_player(
     } else if keyboard_input.pressed(KeyCode::W) {            
         *animation = animations.up.clone();
         transform.translation.y += 100. * time.delta_seconds();
+    } else if keyboard_input.any_just_released([KeyCode::A, KeyCode::S, KeyCode::D, KeyCode::W]) {
+        *animations = animations.standing.clone();
     }
 }
 

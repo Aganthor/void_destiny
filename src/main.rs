@@ -21,8 +21,8 @@ mod constants;
 mod tile_type;
 use constants::*;
 
-//mod player;
-//use player::*;
+mod player;
+use player::*;
 
 mod map;
 use map::*;
