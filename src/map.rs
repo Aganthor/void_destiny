@@ -17,7 +17,6 @@ impl Plugin for MapPlugin {
         app
             .add_plugin(TilemapPlugin)
             .add_startup_system(setup)
-            .add_system(set_texture_filters_to_nearest);
     }
 }
 
@@ -121,23 +120,4 @@ fn biome(elevation: f32, moisture: f32) -> u32 {
     if moisture < 0.33 { return TileType::Grass as u32; } // grassland
     if moisture < 0.66 { return TileType::Forest as u32; } //tropical seasonal forest
     return TileType::Forest as u32; // tropical rain forest
-}
-
-pub fn set_texture_filters_to_nearest(
-    mut texture_events: EventReader<AssetEvent<Image>>,
-    mut textures: ResMut<Assets<Image>>,
-) {
-    // quick and dirty, run this for all textures anytime a texture is created.
-    for event in texture_events.iter() {
-        match event {
-            AssetEvent::Created { handle } => {
-                if let Some(mut texture) = textures.get_mut(handle) {
-                    texture.texture_descriptor.usage = TextureUsages::TEXTURE_BINDING
-                        | TextureUsages::COPY_SRC
-                        | TextureUsages::COPY_DST;
-                }
-            }
-            _ => (),
-        }
-    }
 }

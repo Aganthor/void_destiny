@@ -5,9 +5,7 @@ use bevy::{
     prelude::*,
 };
 
-use benimator::*;
-
-// https://github.com/jcornaz/benimator/blob/main/examples/bevy.rs
+use benimator::FrameRate;
 
 const ANIMATION_DURATION: u64 = 200;
 
@@ -20,15 +18,20 @@ enum Direction {
     Standing,
 }
 
-#[derive(Default)]
+#[derive(Default, Deref)]
 struct PlayerAnimations {
-    left: Handle<SpriteSheetAnimation>,
-    right: Handle<SpriteSheetAnimation>,
-    up: Handle<SpriteSheetAnimation>,
-    down: Handle<SpriteSheetAnimation>,
-    standing: Handle<SpriteSheetAnimation>,
+    left: benimator::Animation,
+    right: benimator::Animation,
+    up: benimator::Animation,
+    down: benimator::Animation,
+    standing: benimator::Animation,
 }
 
+#[derive(Default, Component, Deref, DerefMut)]
+struct PlayerAnimationState(benimator::State);
+
+
+#[derive(Default)]
 pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
@@ -67,13 +70,13 @@ fn move_player(
 }
 
 fn create_player_animations(
-    mut handles: ResMut<PlayerAnimations>,
-    mut assets: ResMut<Assets<SpriteSheetAnimation>>,
+    mut player_animations: ResMut<PlayerAnimations>,
+    mut textures: ResMut<Assets<TextureAtlas>>
 ) {
-    handles.right = assets.add(SpriteSheetAnimation::from_range(6..=8, Duration::from_millis(ANIMATION_DURATION)));
-    handles.left = assets.add(SpriteSheetAnimation::from_range(3..=5, Duration::from_millis(ANIMATION_DURATION)));
-    handles.up = assets.add(SpriteSheetAnimation::from_range(9..=11, Duration::from_millis(ANIMATION_DURATION)));
-    handles.down = assets.add(SpriteSheetAnimation::from_range(0..=2, Duration::from_millis(ANIMATION_DURATION)));
+    // handles.right = assets.add(SpriteSheetAnimation::from_range(6..=8, Duration::from_millis(ANIMATION_DURATION)));
+    // handles.left = assets.add(SpriteSheetAnimation::from_range(3..=5, Duration::from_millis(ANIMATION_DURATION)));
+    // handles.up = assets.add(SpriteSheetAnimation::from_range(9..=11, Duration::from_millis(ANIMATION_DURATION)));
+    // handles.down = assets.add(SpriteSheetAnimation::from_range(0..=2, Duration::from_millis(ANIMATION_DURATION)));
 }
 
 fn setup(

@@ -15,8 +15,6 @@ use bevy::{
     window::PresentMode,
 };
 
-//use benimator::AnimationPlugin;
-
 mod constants;
 mod tile_type;
 use constants::*;
@@ -30,24 +28,28 @@ use map::*;
 fn main() {
     App::new()
         .insert_resource(ClearColor(BG_COLOR))
-        .add_plugins(DefaultPlugins.set(WindowPlugin {
-            window: WindowDescriptor {
-                title: "Void destiny - The roguelike game!".to_string(),
-                width: WINDOW_WIDTH,
-                height: WINDOW_HEIGHT,
-                present_mode: PresentMode::AutoVsync,
+        .add_plugins(DefaultPlugins.build()
+            .set(WindowPlugin {
+                window: WindowDescriptor {
+                    title: "Void destiny - The roguelike game!".to_string(),
+                    width: WINDOW_WIDTH,
+                    height: WINDOW_HEIGHT,
+                    present_mode: PresentMode::AutoVsync,
+                    ..default()
+                },
                 ..default()
-            },
-            ..default()
+            .set(ImagePlugin::default_nearest())
         }))
-        //.add_plugin(AnimationPlugin::default())
-//        .add_plugin(PlayerPlugin)
+        .add_plugin(PlayerPlugin)
         .add_plugin(MapPlugin)
         .add_startup_system(setup_camera)
         .run();
 }
 
 fn setup_camera(mut commands: Commands) {
-    commands.spawn(Camera2dBundle::default());
+    commands.spawn(Camera2dBundle {
+        camera_2d: Camera2d { clear_color: ClearColor(BG_COLOR) },
+        ..Default::default()
+    });
 }
 
