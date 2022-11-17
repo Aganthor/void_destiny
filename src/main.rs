@@ -18,6 +18,7 @@ use bevy::{
 //use benimator::AnimationPlugin;
 
 mod constants;
+mod tile_type;
 use constants::*;
 
 //mod player;
