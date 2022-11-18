@@ -12,7 +12,7 @@
 
 use bevy::{
     prelude::*,
-    window::PresentMode,
+    window::PresentMode, core_pipeline::clear_color::ClearColorConfig,
 };
 
 mod constants;
@@ -27,7 +27,6 @@ use map::*;
 
 fn main() {
     App::new()
-        .insert_resource(ClearColor(BG_COLOR))
         .add_plugins(DefaultPlugins.build()
             .set(WindowPlugin {
                 window: WindowDescriptor {
@@ -37,9 +36,10 @@ fn main() {
                     present_mode: PresentMode::AutoVsync,
                     ..default()
                 },
-                ..default()
+            ..Default::default()}
+            )
             .set(ImagePlugin::default_nearest())
-        }))
+        )
         .add_plugin(PlayerPlugin)
         .add_plugin(MapPlugin)
         .add_startup_system(setup_camera)
@@ -48,7 +48,9 @@ fn main() {
 
 fn setup_camera(mut commands: Commands) {
     commands.spawn(Camera2dBundle {
-        camera_2d: Camera2d { clear_color: ClearColor(BG_COLOR) },
+        camera_2d: Camera2d { 
+            clear_color: ClearColorConfig::Custom(BG_COLOR)
+        },
         ..Default::default()
     });
 }
