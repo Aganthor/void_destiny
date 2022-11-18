@@ -16,7 +16,7 @@ impl Plugin for MapPlugin {
     fn build(&self, app: &mut App) {
         app
             .add_plugin(TilemapPlugin)
-            .add_startup_system(setup)
+            .add_startup_system(setup);
     }
 }
 
