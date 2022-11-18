@@ -18,17 +18,17 @@ enum Direction {
     Standing,
 }
 
-#[derive(Default, Deref)]
-struct PlayerAnimations {
-    left: benimator::Animation,
-    right: benimator::Animation,
-    up: benimator::Animation,
-    down: benimator::Animation,
-    standing: benimator::Animation,
-}
+#[derive(Component, Deref)]
+struct PlayerAnimation(benimator::Animation);
+
 
 #[derive(Default, Component, Deref, DerefMut)]
 struct PlayerAnimationState(benimator::State);
+
+#[derive(Resource, Default)]
+struct PlayerSpriteHandles {
+    handles: Vec<HandleUntyped>,
+}
 
 
 #[derive(Default)]
@@ -38,7 +38,7 @@ impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app
             .init_resource::<PlayerAnimations>()
-            .add_startup_system_to_stage(StartupStage::PreStartup, create_player_animations)
+            .add_startup_system_to_stage(StartupStage::PreStartup, load_player_texture)
             .add_startup_system(setup)
             .add_system(move_player);
     }
@@ -70,9 +70,11 @@ fn move_player(
 }
 
 fn create_player_animations(
-    mut player_animations: ResMut<PlayerAnimations>,
-    mut textures: ResMut<Assets<TextureAtlas>>
+    mut player_animation_handles: ResMut<PlayerSpriteHandles>,
+    asset_server: Res<AssetServer>
 ) {
+    //player_animation_handles.handles = asset_server.load("")
+    //player_animations.right = Animation(benimator::Animation::from_indices(6..=8, FrameRate::from_total_duration(ANIMATION_DURATION)));
     // handles.right = assets.add(SpriteSheetAnimation::from_range(6..=8, Duration::from_millis(ANIMATION_DURATION)));
     // handles.left = assets.add(SpriteSheetAnimation::from_range(3..=5, Duration::from_millis(ANIMATION_DURATION)));
     // handles.up = assets.add(SpriteSheetAnimation::from_range(9..=11, Duration::from_millis(ANIMATION_DURATION)));
@@ -83,7 +85,6 @@ fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
-    animations: Res<PlayerAnimations>
 ) {
     let texture_handle = asset_server.load("Male 01-1.png");
     let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(32.0, 32.0), 3, 4);
