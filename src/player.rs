@@ -30,6 +30,13 @@ struct PlayerSpriteHandles {
     handles: Vec<HandleUntyped>,
 }
 
+#[derive(Resource, Default)]
+struct DirectionAnimations {
+    up: benimator::Animation,
+    down: benimator::Animation,
+    left: benimator::Animation,
+    right: benimator::Animation,
+}
 
 #[derive(Default)]
 pub struct PlayerPlugin;
@@ -37,8 +44,7 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app
-            .init_resource::<PlayerAnimations>()
-            .add_startup_system_to_stage(StartupStage::PreStartup, load_player_texture)
+            .add_startup_system_to_stage(StartupStage::PreStartup, prepare_player_animations)
             .add_startup_system(setup)
             .add_system(move_player);
     }
@@ -69,26 +75,31 @@ fn move_player(
     }
 }
 
-fn create_player_animations(
-    mut player_animation_handles: ResMut<PlayerSpriteHandles>,
+fn prepare_player_animations(
+    mut direction_animations: ResMut<DirectionAnimations>,
     asset_server: Res<AssetServer>
 ) {
-    //player_animation_handles.handles = asset_server.load("")
-    //player_animations.right = Animation(benimator::Animation::from_indices(6..=8, FrameRate::from_total_duration(ANIMATION_DURATION)));
-    // handles.right = assets.add(SpriteSheetAnimation::from_range(6..=8, Duration::from_millis(ANIMATION_DURATION)));
-    // handles.left = assets.add(SpriteSheetAnimation::from_range(3..=5, Duration::from_millis(ANIMATION_DURATION)));
-    // handles.up = assets.add(SpriteSheetAnimation::from_range(9..=11, Duration::from_millis(ANIMATION_DURATION)));
-    // handles.down = assets.add(SpriteSheetAnimation::from_range(0..=2, Duration::from_millis(ANIMATION_DURATION)));
+    direction_animations.up = Animation(benimator::Animation::from_indices(9..=11, FrameRate::from_total_duration(ANIMATION_DURATION)));
+    direction_animations.down = Animation(benimator::Animation::from_indices(0..=2, FrameRate::from_total_duration(ANIMATION_DURATION)));
+    direction_animations.left = Animation(benimator::Animation::from_indices(3..=5, FrameRate::from_total_duration(ANIMATION_DURATION)));
+    direction_animations.right = Animation(benimator::Animation::from_indices(6..=8, FrameRate::from_total_duration(ANIMATION_DURATION)));    
 }
 
 fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    direction_animations: Res<DirectionAnimations>,
 ) {
     let texture_handle = asset_server.load("Male 01-1.png");
-    let texture_atlas = TextureAtlas::from_grid(texture_handle, Vec2::new(32.0, 32.0), 3, 4);
-    let texture_atlas_handle = texture_atlases.add(texture_atlas);
+    let texture_atlas = TextureAtlas::from_grid(
+        texture_handle, 
+        Vec2::new(32.0, 32.0), 
+        3, 
+        4,
+        None,
+        None);
+    let texture_atlas_handle = texture_atlases.add(texture_atlas); 
 
     commands
         .spawn_bundle(SpriteSheetBundle {
@@ -96,7 +107,7 @@ fn setup(
             transform: Transform::from_scale(Vec3::splat(1.0)),
             ..default()
         })
-        .insert(animations.left.clone())
-        .insert(Play)
+        .insert(PlayerAnimation::direction_animations.left)
+        .insert(PlayerAnimationState::default())
         .insert(Direction::Left);
 }
