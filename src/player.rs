@@ -47,13 +47,30 @@ impl Default for DirectionAnimations {
 #[derive(Default)]
 pub struct PlayerPlugin;
 
+
+// .add_system_set(
+//     SystemSet::new()
+//         // This label is added to all systems in this set.
+//         // The label can then be referred to elsewhere (other sets).
+//         .label(Physics)
+//         // This criteria ensures this whole system set only runs when this system's
+//         // output says so (ShouldRun::Yes)
+//         .with_run_criteria(run_for_a_second)
+//         .with_system(update_velocity)
+//         // Make movement run after update_velocity
+//         .with_system(movement.after(update_velocity)),
+// )
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app
             .init_resource::<DirectionAnimations>()
             .add_startup_system(setup)
-            .add_system(move_player)
-            .add_system(animate_player);
+            .add_system_set(
+                SystemSet::new()
+                    .with_system(move_player)
+                    .with_system(animate_player.after(move_player)));
+//            .add_system(move_player)
+//            .add_system(animate_player);
     }
 }
 
@@ -62,7 +79,7 @@ fn animate_player(
     mut animation_query: Query<(&PlayerAnimation, &mut PlayerAnimationState, &mut TextureAtlasSprite)>,
 ) {
     for (animation, mut animation_state, mut texture_atlas) in &mut animation_query {
-        animation_state.update(&animation, time.delta());
+        animation_state.update(animation, time.delta());
         texture_atlas.index = animation_state.frame_index();
     } 
 }
