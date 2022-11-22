@@ -6,7 +6,7 @@ pub const WINDOW_HEIGHT: f32 = 768.0;
 
 // Overworld map size
 pub const OVERWORLD_SIZE_WIDTH: u32 = 32;
-pub const OVERWORLD_SIZE_HEIGHT: u32 = 32;
+pub const OVERWORLD_SIZE_HEIGHT: u32 = 24;
 
 // Colors
 pub const BG_COLOR: Color = Color::rgb(38. / 255., 20. / 255., 40. / 255.);
