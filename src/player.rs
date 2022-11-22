@@ -111,11 +111,13 @@ fn setup(
     let texture_atlas =
         TextureAtlas::from_grid(texture_handle, Vec2::new(32.0, 32.0), 3, 4, None, None);
     let texture_atlas_handle = texture_atlases.add(texture_atlas);
-
+    let player_position = Transform::from_translation(Vec3::Z * 10.0) * Transform::from_scale(Vec3::splat(1.0));
+    
     commands
         .spawn(SpriteSheetBundle {
             texture_atlas: texture_atlas_handle,
-            transform: Transform::from_scale(Vec3::splat(1.0)),
+            transform: player_position,
+            
             ..default()
         })
         .insert(PlayerAnimation(direction_animations.left.clone()))
