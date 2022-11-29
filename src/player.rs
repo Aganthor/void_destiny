@@ -83,7 +83,6 @@ impl Plugin for PlayerPlugin {
                 CoreStage::PostUpdate,
                 SystemSet::new()
                     .with_system(position_translation)   
-            //       .with_system(size_scaling),
             );
     }
 }
@@ -155,20 +154,7 @@ fn setup(
         .insert(PlayerAnimationState::default())
         .insert(Direction::Left)
         .insert(Position { x: 0, y: 0 });
-        //.insert(Size::square(0.08));
 }
-
-// fn size_scaling(windows: Res<Windows>, mut q: Query<(&Size, &mut Transform)>) {
-//     let window = windows.get_primary().unwrap();
-
-//     for (sprite_size, mut transform) in q.iter_mut() {
-//         transform.scale = Vec3::new(
-//             sprite_size.width / OVERWORLD_SIZE_WIDTH as f32 * window.width() as f32,
-//             sprite_size.height / OVERWORLD_SIZE_HEIGHT as f32 * window.height() as f32,
-//             10.0,
-//         );
-//     }
-// }
 
 fn position_translation(
     windows: Res<Windows>, 
@@ -181,6 +167,7 @@ fn position_translation(
 
     let window = windows.get_primary().unwrap();
     for (pos, mut transform) in q.iter_mut() {
+        println!("pos.x = {}, pos.y = {}", pos.x, pos.y);
         transform.translation = Vec3::new(
             convert(pos.x as f32, window.width() as f32, OVERWORLD_SIZE_WIDTH as f32),
             convert(pos.y as f32, window.height() as f32, OVERWORLD_SIZE_HEIGHT as f32),
