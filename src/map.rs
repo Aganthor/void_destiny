@@ -1,6 +1,5 @@
 use bevy::{
-    prelude::*, 
-    render::render_resource::TextureUsages,
+    prelude::*,
 };
 use bevy_ecs_tilemap::prelude::*;
 use rand::prelude::*;
@@ -60,12 +59,11 @@ fn setup(
             let index = x + OVERWORLD_SIZE_WIDTH * y;
             let elevation_value = elevation_noise.get(index as usize).unwrap();
             let moisture_value = moisture_noise.get(index as usize).unwrap();
-            let mut texture_id = 0;
             let tile_entity = commands
                 .spawn(TileBundle {
                     position: tile_pos,
                     tilemap_id: TilemapId(tilemap_entity),
-                    texture_index: TileTextureIndex { 0: biome(*elevation_value, *moisture_value) },
+                    texture_index: TileTextureIndex (biome(*elevation_value, *moisture_value)),
                     ..Default::default()
                 })
                 .id();
@@ -119,5 +117,6 @@ fn biome(elevation: f32, moisture: f32) -> u32 {
     if moisture < 0.16 { return TileType::Sand as u32; } // subtropical desert
     if moisture < 0.33 { return TileType::Grass as u32; } // grassland
     if moisture < 0.66 { return TileType::Forest as u32; } //tropical seasonal forest
-    return TileType::Forest as u32; // tropical rain forest
+
+    TileType::Forest as u32 // tropical rain forest
 }
