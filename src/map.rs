@@ -6,6 +6,7 @@ use rand::prelude::*;
 use simdnoise::*;
 
 use crate::constants::*;
+use crate::events::MoveEvent;
 use crate::tile_type::*;
 
 
@@ -119,4 +120,8 @@ fn biome(elevation: f32, moisture: f32) -> u32 {
     if moisture < 0.66 { return TileType::Forest as u32; } //tropical seasonal forest
 
     TileType::Forest as u32 // tropical rain forest
+}
+
+fn move_event_listener(mut events: EventReader<MoveEvent>) {
+    
 }

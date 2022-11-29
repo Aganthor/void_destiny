@@ -25,8 +25,12 @@ use player::*;
 mod map;
 use map::*;
 
+mod events;
+use events::*;
+
 fn main() {
     App::new()
+        .add_event::<MoveEvent>()
         .add_plugins(DefaultPlugins.build()
             .set(WindowPlugin {
                 window: WindowDescriptor {
