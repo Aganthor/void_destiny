@@ -178,10 +178,16 @@ fn move_event_listener(
                             let walkable = tile_walkable(tile_texture.0);
                             if walkable {
                                 println!("Tile is walkable");
-                                move_legal.send(MoveLegal { legal_move: true });
+                                move_legal.send(MoveLegal { 
+                                    legal_move: true,
+                                    destination: move_event.destination, 
+                                });
                             } else {
                                 println!("Tile is not walkable");
-                                move_legal.send(MoveLegal { legal_move: false });
+                                move_legal.send(MoveLegal {
+                                    legal_move: false,
+                                    destination: None,
+                                 });
                             }
                         }
                     }

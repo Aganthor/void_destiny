@@ -7,4 +7,5 @@ pub struct MoveEvent {
 
 pub struct MoveLegal {
     pub legal_move: bool,
+    pub destination: Option<Vec3>,
 }
