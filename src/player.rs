@@ -8,6 +8,7 @@ use bevy::{
 use benimator::*;
 
 use crate::constants::{OVERWORLD_SIZE_WIDTH, OVERWORLD_SIZE_HEIGHT};
+use crate::events::MoveEvent;
 
 const ANIMATION_DURATION: u64 = 200;
 
@@ -78,12 +79,12 @@ impl Plugin for PlayerPlugin {
                 SystemSet::new()
                     .with_system(move_player)
                     .with_system(animate_player.after(move_player)),
-            )
-            .add_system_set_to_stage(
-                CoreStage::PostUpdate,
-                SystemSet::new()
-                    .with_system(position_translation)   
             );
+            // .add_system_set_to_stage(
+            //     CoreStage::PostUpdate,
+            //     SystemSet::new()
+            //         .with_system(position_translation)   
+            // );
     }
 }
 
@@ -105,30 +106,46 @@ fn move_player(
     keyboard_input: Res<Input<KeyCode>>,
     animations: Res<DirectionAnimations>,
     time: Res<Time>,
-    //mut direction_query: Query<(&mut PlayerAnimation, &mut Transform)>,
-    mut direction_query: Query<(&mut PlayerAnimation, &mut Position)>,
+    mut direction_query: Query<(&mut PlayerAnimation, &mut Transform)>,
+    //mut direction_query: Query<(&mut PlayerAnimation, &mut Position, &mut Transform)>,
+    mut move_event: EventWriter<MoveEvent>,
 ) {
-    let (mut animation, mut position) = direction_query.single_mut();
+    //let (mut animation, mut position, mut transform) = direction_query.single_mut();
+    let (mut animation, mut transform) = direction_query.single_mut();
+    let mut player_move_event = MoveEvent {
+        origin: Some(transform.translation),
+        destination: None,
+    };
+    let mut send_event = false;
 
     if keyboard_input.pressed(KeyCode::A) {
         *animation = PlayerAnimation(animations.left.clone());
-        //transform.translation.x -= 100. * time.delta_seconds();
-        position.x -= 1;
+        transform.translation.x -= 100. * time.delta_seconds();
+        send_event = true;
+        //position.x -= 1;
     } else if keyboard_input.pressed(KeyCode::D) {
         *animation = PlayerAnimation(animations.right.clone());
-        //transform.translation.x += 100. * time.delta_seconds();
-        position.x += 1;
+        transform.translation.x += 100. * time.delta_seconds();
+        send_event = true;
+        //position.x += 1;
     } else if keyboard_input.pressed(KeyCode::S) {
         *animation = PlayerAnimation(animations.down.clone());
-        //transform.translation.y -= 100. * time.delta_seconds();
-        position.y -= 1;
+        transform.translation.y -= 100. * time.delta_seconds();
+        send_event = true;
+        //position.y -= 1;
     } else if keyboard_input.pressed(KeyCode::W) {
         *animation = PlayerAnimation(animations.up.clone());
-        //transform.translation.y += 100. * time.delta_seconds();
-        position.y += 1;
+        transform.translation.y += 100. * time.delta_seconds();
+        send_event = true;
+        //position.y += 1;
     } else if keyboard_input.any_just_released([KeyCode::A, KeyCode::S, KeyCode::D, KeyCode::W]) {
         //*animations = animations.standing.clone();
         println!("Just released a key... stop animation.")
+    }
+
+    if send_event {
+        player_move_event.destination = Some(transform.translation);
+        move_event.send(player_move_event);
     }
 }
 
@@ -156,22 +173,22 @@ fn setup(
         .insert(Position { x: 0, y: 0 });
 }
 
-fn position_translation(
-    windows: Res<Windows>, 
-    mut q: Query<(&Position, &mut Transform)>, 
-) {
-    fn convert(pos: f32, bound_window: f32, bound_game: f32) -> f32 {
-        let tile_size = bound_window / bound_game;
-        pos / bound_game * bound_window - (bound_window / 2.) + (tile_size / 2.)
-    }
+// fn position_translation(
+//     windows: Res<Windows>, 
+//     mut q: Query<(&Position, &mut Transform)>, 
+// ) {
+//     fn convert(pos: f32, bound_window: f32, bound_game: f32) -> f32 {
+//         let tile_size = bound_window / bound_game;
+//         pos / bound_game * bound_window - (bound_window / 2.) + (tile_size / 2.)
+//     }
 
-    let window = windows.get_primary().unwrap();
-    for (pos, mut transform) in q.iter_mut() {
-        println!("pos.x = {}, pos.y = {}", pos.x, pos.y);
-        transform.translation = Vec3::new(
-            convert(pos.x as f32, window.width() as f32, OVERWORLD_SIZE_WIDTH as f32),
-            convert(pos.y as f32, window.height() as f32, OVERWORLD_SIZE_HEIGHT as f32),
-            10.0,
-        );
-    }
-}
+//     let window = windows.get_primary().unwrap();
+//     for (pos, mut transform) in q.iter_mut() {
+//         println!("pos.x = {}, pos.y = {}", pos.x, pos.y);
+//         transform.translation = Vec3::new(
+//             convert(pos.x as f32, window.width() as f32, OVERWORLD_SIZE_WIDTH as f32),
+//             convert(pos.y as f32, window.height() as f32, OVERWORLD_SIZE_HEIGHT as f32),
+//             10.0,
+//         );
+//     }
+// }

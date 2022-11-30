@@ -31,6 +31,7 @@ use events::*;
 fn main() {
     App::new()
         .add_event::<MoveEvent>()
+        .add_event::<MoveLegal>()
         .add_plugins(DefaultPlugins.build()
             .set(WindowPlugin {
                 window: WindowDescriptor {

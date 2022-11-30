@@ -1,5 +1,10 @@
-use bevy::math::Vec2;
+use bevy::math::Vec3;
 
 pub struct MoveEvent {
-    destination: Vec2,
+    pub origin: Option<Vec3>,
+    pub destination: Option<Vec3>,
+}
+
+pub struct MoveLegal {
+    pub legal_move: bool,
 }
