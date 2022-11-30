@@ -46,9 +46,9 @@ fn setup(
     seed = rng.gen();
     let moisture_noise = NoiseBuilder::fbm_2d(OVERWORLD_SIZE_WIDTH as usize, OVERWORLD_SIZE_HEIGHT as usize)
         .with_freq(0.03)
-        .with_gain(2.5)
-        .with_lacunarity(0.55)
-        .with_octaves(2)
+        .with_gain(3.5)
+        .with_lacunarity(0.75)
+        .with_octaves(4)
         .with_seed(seed)
         .generate_scaled(0.0, 1.0);        
 
