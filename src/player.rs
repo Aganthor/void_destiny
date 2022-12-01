@@ -75,11 +75,6 @@ impl Plugin for PlayerPlugin {
                 SystemSet::new()
                     .with_system(move_player)   
             )
-            // .add_system_set(
-            //     SystemSet::new()
-            //         .with_system(move_player)
-            //         .with_system(animate_player.after(move_player)),
-            // )
             .add_system_set_to_stage(
                 CoreStage::PostUpdate,
                 SystemSet::new()
