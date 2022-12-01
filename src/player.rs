@@ -2,13 +2,15 @@ use core::time::Duration;
 
 use bevy::{
     input::{keyboard::KeyCode, Input},
-    prelude::*, ecs::event::Event,
+    prelude::*,
 };
 
 use benimator::*;
 
-use crate::{constants::{OVERWORLD_SIZE_WIDTH, OVERWORLD_SIZE_HEIGHT}, events::MoveLegal};
-use crate::events::MoveEvent;
+use crate::events::{
+    MoveEvent,
+    MoveLegal
+};
 
 const ANIMATION_DURATION: u64 = 200;
 
@@ -166,24 +168,17 @@ fn setup(
 }
 
 fn move_player(
-    windows: Res<Windows>,
     mut q: Query<(&mut Transform, With<PlayerTag>)>,
     mut valid_move: EventReader<MoveLegal>,
 ) {
-    fn convert(pos: f32, bound_window: f32, bound_game: f32) -> f32 {
-        let tile_size = bound_window / bound_game;
-        pos / bound_game * bound_window - (bound_window / 2.) + (tile_size / 2.)
-    }
-
-    let window = windows.get_primary().unwrap();
-
     for event in valid_move.iter() {
         if event.legal_move {
-            for mut transform in q.iter_mut() {
-                println!("pos.x = {}, pos.y = {}", event.destination.unwrap().x, event.destination.unwrap().y);
+            for (mut transform, _) in q.iter_mut() {
+                println!("event pos.x = {}, event pos.y = {}", event.destination.unwrap().x, event.destination.unwrap().y);
+                println!("transform pos.x = {}, transform pos.y = {}", transform.translation.x, transform.translation.y);
                 transform.translation = Vec3::new(
-                    convert(transform.translation.x as f32, window.width() as f32, OVERWORLD_SIZE_WIDTH as f32),
-                    convert(transform.translation.y as f32, window.height() as f32, OVERWORLD_SIZE_HEIGHT as f32),
+                    event.destination.unwrap().x, 
+                    event.destination.unwrap().y,
                     10.0,
                 );
             }
