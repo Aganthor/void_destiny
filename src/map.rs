@@ -7,17 +7,40 @@ use crate::constants::*;
 use crate::events::{MoveEvent, MoveLegal};
 use crate::tile_type::*;
 
+
+#[derive(Resource)]
+pub struct MapSeed {
+    map_elevation_seed: i32,
+    map_moisture_seed: i32,
+}
+
+impl Default for MapSeed {
+    fn default() -> Self {
+        let mut rng = rand::thread_rng();
+
+        MapSeed { 
+            map_elevation_seed: rng.gen(),
+            map_moisture_seed: rng.gen(),
+        }
+    }
+}
+
 pub struct MapPlugin;
 
 impl Plugin for MapPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(TilemapPlugin)
+            .init_resource::<MapSeed>()
             .add_startup_system(setup)
             .add_system(move_event_listener);
     }
 }
 
-fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
+fn setup(
+    mut commands: Commands, 
+    asset_server: Res<AssetServer>,
+    map_seed: Res<MapSeed>,
+) {
     let texture_handle = asset_server.load("tiles/overworld_tiles.png");
 
     let tilemap_size = TilemapSize {
@@ -27,10 +50,6 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     let tilemap_entity = commands.spawn_empty().id();
     let mut tile_storage = TileStorage::empty(tilemap_size);
 
-    // Generate noise for the map.
-    let mut rng = rand::thread_rng();
-    let mut seed = rng.gen();
-
     let elevation_noise = NoiseBuilder::fbm_2d(
         OVERWORLD_SIZE_WIDTH as usize,
         OVERWORLD_SIZE_HEIGHT as usize,
@@ -39,11 +58,10 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     .with_gain(2.5)
     .with_lacunarity(0.55)
     .with_octaves(2)
-    .with_seed(seed)
+    .with_seed(map_seed.map_elevation_seed)
     .generate_scaled(0.0, 1.0);
 
     // Generate a new seed for the moisture noise
-    seed = rng.gen();
     let moisture_noise = NoiseBuilder::fbm_2d(
         OVERWORLD_SIZE_WIDTH as usize,
         OVERWORLD_SIZE_HEIGHT as usize,
@@ -52,7 +70,7 @@ fn setup(mut commands: Commands, asset_server: Res<AssetServer>) {
     .with_gain(3.5)
     .with_lacunarity(0.75)
     .with_octaves(4)
-    .with_seed(seed)
+    .with_seed(map_seed.map_moisture_seed)
     .generate_scaled(0.0, 1.0);
 
     // For each tile, create the proper entity with the corresponding texture according to it's
@@ -177,13 +195,13 @@ fn move_event_listener(
                             println!("{:?}", tile_texture);
                             let walkable = tile_walkable(tile_texture.0);
                             if walkable {
-                                println!("Tile is walkable");
+                                info!("Tile is walkable");
                                 move_legal.send(MoveLegal { 
                                     legal_move: true,
                                     destination: move_event.destination, 
                                 });
                             } else {
-                                println!("Tile is not walkable");
+                                info!("Tile is not walkable");
                                 move_legal.send(MoveLegal {
                                     legal_move: false,
                                     destination: None,
