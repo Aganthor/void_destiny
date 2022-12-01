@@ -15,6 +15,8 @@ use bevy::{
     window::PresentMode, core_pipeline::clear_color::ClearColorConfig,
 };
 
+use bevy_inspector_egui::WorldInspectorPlugin;
+
 mod constants;
 mod tile_type;
 use constants::*;
@@ -45,6 +47,7 @@ fn main() {
             )
             .set(ImagePlugin::default_nearest())
         )
+        .add_plugin(WorldInspectorPlugin::new())
         .add_plugin(PlayerPlugin)
         .add_plugin(MapPlugin)
         .add_startup_system(setup_camera)
