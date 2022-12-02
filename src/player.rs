@@ -2,17 +2,22 @@ use core::time::Duration;
 
 use bevy::{
     input::{keyboard::KeyCode, Input},
+    sprite::collide_aabb::collide,
     prelude::*,
 };
 
 use benimator::*;
+use bevy_inspector_egui::Inspectable;
 
 use crate::events::{
     MoveEvent,
     MoveLegal
 };
+use crate::map::TileCollider;
 
 const ANIMATION_DURATION: u64 = 200;
+const MOVE_SPEED: f32 = 3.0;
+const PLAYER_TILE_SIZE: f32 = 32.0;
 
 #[derive(Component)]
 enum Direction {
@@ -23,8 +28,11 @@ enum Direction {
     Standing,
 }
 
-#[derive(Component)]
-struct PlayerTag;
+#[derive(Component, Inspectable)]
+pub struct Player {
+    speed: f32,
+    size: f32,
+}
 
 #[derive(Component, Deref, Debug)]
 struct PlayerAnimation(benimator::Animation);
@@ -66,15 +74,15 @@ impl Plugin for PlayerPlugin {
         app.init_resource::<DirectionAnimations>()
             .add_startup_system(setup)
             .add_system_set_to_stage(
-                CoreStage::PreUpdate,
+                CoreStage::Update,
                 SystemSet::new()
                     .with_system(try_move_player)   
             )
-            .add_system_set_to_stage(
-                CoreStage::Update,
-                SystemSet::new()
-                    .with_system(move_player)   
-            )
+            // .add_system_set_to_stage(
+            //     CoreStage::Update,
+            //     SystemSet::new()
+            //         .with_system(move_player)   
+            // )
             .add_system_set_to_stage(
                 CoreStage::PostUpdate,
                 SystemSet::new()
@@ -101,41 +109,74 @@ fn try_move_player(
     keyboard_input: Res<Input<KeyCode>>,
     animations: Res<DirectionAnimations>,
     time: Res<Time>,
-    mut direction_query: Query<(&mut PlayerAnimation, &Transform)>,
+    mut direction_query: Query<(&mut PlayerAnimation, &mut Transform, &Player)>,
+    wall_query: Query<(&Transform, (With<TileCollider>, Without<Player>))>,
     mut move_event: EventWriter<MoveEvent>,
 ) {
-    let (mut animation, transform) = direction_query.single_mut();
-    let mut player_move_event = MoveEvent {
-        origin: Some(transform.translation),
-        destination: None,
-    };
+    let (mut animation, mut transform, player) = direction_query.single_mut();
+    // let mut player_move_event = MoveEvent {
+    //     origin: Some(transform.translation),
+    //     destination: None,
+    // };
     let mut send_event = false;
-    let mut destination = transform.translation;
+    //let mut destination = transform.translation;
+    let mut x_delta: f32 = 0.0;
+    let mut y_delta: f32 = 0.0;
 
     if keyboard_input.pressed(KeyCode::A) {
         *animation = PlayerAnimation(animations.left.clone());
-        destination.x -=  100. * time.delta_seconds();
+        x_delta -=  player.speed * player.size * time.delta_seconds();
         send_event = true;
     } else if keyboard_input.pressed(KeyCode::D) {
         *animation = PlayerAnimation(animations.right.clone());
-        destination.x += 100. * time.delta_seconds();
+        x_delta += player.speed * player.size * time.delta_seconds();
         send_event = true;
     } else if keyboard_input.pressed(KeyCode::S) {
         *animation = PlayerAnimation(animations.down.clone());
-        destination.y -= 100. * time.delta_seconds();
+        y_delta -= player.speed * player.size * time.delta_seconds();
         send_event = true;
     } else if keyboard_input.pressed(KeyCode::W) {
         *animation = PlayerAnimation(animations.up.clone());
-        destination.y += 100. * time.delta_seconds();
+        y_delta += player.speed * player.size * time.delta_seconds();
         send_event = true;
     } else if keyboard_input.any_just_released([KeyCode::A, KeyCode::S, KeyCode::D, KeyCode::W]) {
         println!("Just released a key... stop animation.")
     }
 
+    let target = transform.translation + Vec3::new(x_delta, 0.0, 0.0);
+    if check_for_collision(target, &wall_query) {
+        transform.translation = target;
+    }    
+
+    let target = transform.translation + Vec3::new(0.0, y_delta, 0.0);
+    if check_for_collision(target, &wall_query) {
+        transform.translation = target;
+    }    
+
     if send_event {
-        player_move_event.destination = Some(destination);
-        move_event.send(player_move_event);
+        //player_move_event.destination = Some(destination);
+        //move_event.send(player_move_event);
     }
+}
+
+fn check_for_collision(
+    target_player_pos: Vec3,
+    wall_query: &Query<(&Transform, (With<TileCollider>, Without<Player>))>
+) -> bool {
+    for (&wall_transform, _) in wall_query.iter() {
+        let collision = collide(
+            target_player_pos,
+            Vec2::splat(PLAYER_TILE_SIZE * 0.9),
+            wall_transform.translation,
+            Vec2::splat(1.0)
+        );
+        if collision.is_some() {
+            println!("Player destination is not walkable...");
+            return false;
+        }
+    }
+    println!("Player destination is walkable...");
+    true
 }
 
 fn setup(
@@ -159,11 +200,14 @@ fn setup(
         .insert(PlayerAnimation(direction_animations.left.clone()))
         .insert(PlayerAnimationState::default())
         .insert(Direction::Left)
-        .insert(PlayerTag);
+        .insert(Player {
+            speed: MOVE_SPEED,
+            size: PLAYER_TILE_SIZE
+        });
 }
 
 fn move_player(
-    mut q: Query<(&mut Transform, With<PlayerTag>)>,
+    mut q: Query<(&mut Transform, With<Player>)>,
     mut valid_move: EventReader<MoveLegal>,
 ) {
     for event in valid_move.iter() {

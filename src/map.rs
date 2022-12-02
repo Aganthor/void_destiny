@@ -1,14 +1,20 @@
+//#[]
+
 use bevy::{math::Vec4Swizzles, prelude::*};
 use bevy_ecs_tilemap::prelude::*;
 use rand::prelude::*;
 use simdnoise::*;
+use bevy_inspector_egui::Inspectable;
 
 use crate::constants::*;
 use crate::events::{MoveEvent, MoveLegal};
 use crate::tile_type::*;
 
+#[derive(Component, Inspectable)]
+pub struct TileCollider;
 
-#[derive(Resource)]
+
+#[derive(Resource, Inspectable)]
 pub struct MapSeed {
     map_elevation_seed: i32,
     map_moisture_seed: i32,
@@ -31,8 +37,8 @@ impl Plugin for MapPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(TilemapPlugin)
             .init_resource::<MapSeed>()
-            .add_startup_system(setup)
-            .add_system(move_event_listener);
+            .add_startup_system(setup);
+            //.add_system(move_event_listener);
     }
 }
 
@@ -81,14 +87,21 @@ fn setup(
             let index = x + OVERWORLD_SIZE_WIDTH * y;
             let elevation_value = elevation_noise.get(index as usize).unwrap();
             let moisture_value = moisture_noise.get(index as usize).unwrap();
+            let texture_index = biome(*elevation_value, *moisture_value);
+            let walkable = tile_walkable(texture_index);
+
             let tile_entity = commands
                 .spawn(TileBundle {
                     position: tile_pos,
                     tilemap_id: TilemapId(tilemap_entity),
-                    texture_index: TileTextureIndex(biome(*elevation_value, *moisture_value)),
+                    texture_index: TileTextureIndex(texture_index),
                     ..Default::default()
                 })
                 .id();
+            println!("Tile {} is {} walkable", texture_index, walkable);
+            if !walkable {
+                commands.entity(tile_entity).insert(TileCollider);
+            }
             tile_storage.set(&tile_pos, tile_entity);
         }
     }
