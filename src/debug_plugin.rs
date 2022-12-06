@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy_ecs_tilemap::tiles::TileBundle;
 use bevy_inspector_egui::{WorldInspectorPlugin, RegisterInspectable};
 
 use crate::player::Player;
@@ -12,6 +13,7 @@ impl Plugin for DebugPlugin {
             app.add_plugin(WorldInspectorPlugin::new())
                 .register_inspectable::<Player>()
                 .register_inspectable::<MapSeed>()
+                //.register_inspectable::<TileBundle>()
                 .register_inspectable::<TileCollider>();
         }
     }

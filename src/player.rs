@@ -60,11 +60,11 @@ impl Default for DirectionAnimations {
     }
 }
 
-#[derive(Component, Clone, Copy, PartialEq, Eq)]
-struct Position {
-    x: i32,
-    y: i32,
-}
+// #[derive(Component, Clone, Copy, PartialEq, Eq)]
+// struct Position {
+//     x: i32,
+//     y: i32,
+// }
 
 #[derive(Default)]
 pub struct PlayerPlugin;
@@ -109,11 +109,11 @@ fn try_move_player(
     keyboard_input: Res<Input<KeyCode>>,
     animations: Res<DirectionAnimations>,
     time: Res<Time>,
-    mut direction_query: Query<(&mut PlayerAnimation, &mut Transform, &Player)>,
+    mut player_query: Query<(&mut PlayerAnimation, &mut Transform, &Player)>,
     wall_query: Query<(&Transform, (With<TileCollider>, Without<Player>))>,
-    mut move_event: EventWriter<MoveEvent>,
+    //mut move_event: EventWriter<MoveEvent>,
 ) {
-    let (mut animation, mut transform, player) = direction_query.single_mut();
+    let (mut animation, mut transform, player) = player_query.single_mut();
     // let mut player_move_event = MoveEvent {
     //     origin: Some(transform.translation),
     //     destination: None,
@@ -140,7 +140,7 @@ fn try_move_player(
         y_delta += player.speed * player.size * time.delta_seconds();
         send_event = true;
     } else if keyboard_input.any_just_released([KeyCode::A, KeyCode::S, KeyCode::D, KeyCode::W]) {
-        println!("Just released a key... stop animation.")
+        //println!("Just released a key... stop animation.");
     }
 
     let target = transform.translation + Vec3::new(x_delta, 0.0, 0.0);
@@ -163,19 +163,23 @@ fn check_for_collision(
     target_player_pos: Vec3,
     wall_query: &Query<(&Transform, (With<TileCollider>, Without<Player>))>
 ) -> bool {
+    if wall_query.is_empty() {
+        println!("Wall query is empty...");
+    }
     for (&wall_transform, _) in wall_query.iter() {
+        println!("Player pos {}, tile pos {}", target_player_pos, wall_transform.translation);
         let collision = collide(
             target_player_pos,
             Vec2::splat(PLAYER_TILE_SIZE * 0.9),
             wall_transform.translation,
-            Vec2::splat(1.0)
+            Vec2::splat(PLAYER_TILE_SIZE)
         );
         if collision.is_some() {
             println!("Player destination is not walkable...");
             return false;
         }
     }
-    println!("Player destination is walkable...");
+    //println!("Player destination is walkable...");
     true
 }
 

@@ -98,8 +98,9 @@ fn setup(
                     ..Default::default()
                 })
                 .id();
-            println!("Tile {} is {} walkable", texture_index, walkable);
+            
             if !walkable {
+                println!("Tile @ {},{} is not walkable and it's index is {}", tile_pos.x, tile_pos.y, texture_index);
                 commands.entity(tile_entity).insert(TileCollider);
             }
             tile_storage.set(&tile_pos, tile_entity);
@@ -124,8 +125,10 @@ fn setup(
 
 fn biome(elevation: f32, moisture: f32) -> u32 {
     if elevation < 0.1 {
+        println!("Deepwater...");
         return TileType::DeepWater as u32;
     } else if elevation < 0.12 {
+        println!("Shallowwater...");
         return TileType::ShallowWater as u32;
     }
 
