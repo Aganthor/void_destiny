@@ -3,7 +3,7 @@ use bevy_ecs_tilemap::tiles::TileBundle;
 use bevy_inspector_egui::{WorldInspectorPlugin, RegisterInspectable};
 
 use crate::player::Player;
-use crate::map::{MapSeed, TileCollider};
+use crate::map::MapSeed;//{MapSeed, TileCollider};
 
 pub struct DebugPlugin;
 
@@ -12,9 +12,9 @@ impl Plugin for DebugPlugin {
         if cfg!(debug_assertions) {
             app.add_plugin(WorldInspectorPlugin::new())
                 .register_inspectable::<Player>()
-                .register_inspectable::<MapSeed>()
+                .register_inspectable::<MapSeed>();
                 //.register_inspectable::<TileBundle>()
-                .register_inspectable::<TileCollider>();
+                //.register_inspectable::<TileCollider>();
         }
     }
 }

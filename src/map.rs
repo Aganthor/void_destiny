@@ -10,8 +10,8 @@ use crate::constants::*;
 use crate::events::{MoveEvent, MoveLegal};
 use crate::tile_type::*;
 
-#[derive(Component, Inspectable)]
-pub struct TileCollider;
+// #[derive(Component, Inspectable)]
+// pub struct TileCollider;
 
 
 #[derive(Resource, Inspectable)]
@@ -31,14 +31,37 @@ impl Default for MapSeed {
     }
 }
 
+// #[derive(Component, Inspectable)]
+// struct NoiseSettings {
+//     frequency: f32,
+//     gain: f32,
+//     lacunarity: f32,
+//     octaves: f32,
+// }
+
+// impl NoiseSettings {
+//     fn new() -> Self {
+//         NoiseSettings { frequency: (), gain: (), lacunarity: (), octaves: () }
+//     }
+// }
+
+// #[derive(Bundle, Inspectable)]
+// struct Map {
+//     ecs_map: TilemapBundle,
+//     elevation_noise: NoiseSettings,
+//     moisture_noise: NoiseSettings,
+//     seeds: MapSeed,
+// }
+
+
 pub struct MapPlugin;
 
 impl Plugin for MapPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(TilemapPlugin)
             .init_resource::<MapSeed>()
-            .add_startup_system(setup);
-            //.add_system(move_event_listener);
+            .add_startup_system(setup)
+            .add_system(move_event_listener);
     }
 }
 
@@ -88,7 +111,7 @@ fn setup(
             let elevation_value = elevation_noise.get(index as usize).unwrap();
             let moisture_value = moisture_noise.get(index as usize).unwrap();
             let texture_index = biome(*elevation_value, *moisture_value);
-            let walkable = tile_walkable(texture_index);
+            // let walkable = tile_walkable(texture_index);
 
             let tile_entity = commands
                 .spawn(TileBundle {
@@ -99,10 +122,11 @@ fn setup(
                 })
                 .id();
             
-            if !walkable {
-                println!("Tile @ {},{} is not walkable and it's index is {}", tile_pos.x, tile_pos.y, texture_index);
-                commands.entity(tile_entity).insert(TileCollider);
-            }
+            // if !walkable {
+            //     println!("Tile @ {},{} is not walkable and it's index is {}", tile_pos.x, tile_pos.y, texture_index);
+            //     commands.entity(tile_entity).insert(TileCollider);
+                
+            // }
             tile_storage.set(&tile_pos, tile_entity);
         }
     }
