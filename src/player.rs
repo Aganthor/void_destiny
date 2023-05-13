@@ -7,7 +7,7 @@ use bevy::{
 };
 
 use benimator::*;
-use bevy_inspector_egui::Inspectable;
+//use bevy_inspector_egui::Inspectable;
 
 use crate::events::{
     MoveEvent,
@@ -28,7 +28,8 @@ enum Direction {
     Standing,
 }
 
-#[derive(Component, Inspectable)]
+//#[derive(Component, Inspectable)]
+#[derive(Component)]
 pub struct Player {
     speed: f32,
     size: f32,
@@ -73,21 +74,9 @@ impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<DirectionAnimations>()
             .add_startup_system(setup)
-            .add_system_set_to_stage(
-                CoreStage::PreUpdate,
-                SystemSet::new()
-                    .with_system(try_move_player)   
-            )
-            .add_system_set_to_stage(
-                CoreStage::Update,
-                SystemSet::new()
-                    .with_system(move_player)   
-            )
-            .add_system_set_to_stage(
-                CoreStage::PostUpdate,
-                SystemSet::new()
-                    .with_system(animate_player)   
-            );
+            .add_system(try_move_player.in_base_set(CoreSet::PreUpdate))
+            .add_system(move_player.in_base_set(CoreSet::Update))
+            .add_system(animate_player.in_base_set(CoreSet::PostUpdate));
     }
 }
 

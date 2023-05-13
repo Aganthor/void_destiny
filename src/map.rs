@@ -4,7 +4,7 @@ use bevy::{math::Vec4Swizzles, prelude::*};
 use bevy_ecs_tilemap::prelude::*;
 use rand::prelude::*;
 use simdnoise::*;
-use bevy_inspector_egui::Inspectable;
+//use bevy_inspector_egui::Inspectable;
 
 use crate::constants::*;
 use crate::events::{MoveEvent, MoveLegal};
@@ -14,7 +14,8 @@ use crate::tile_type::*;
 // pub struct TileCollider;
 
 
-#[derive(Resource, Inspectable)]
+//#[derive(Resource, Inspectable)]
+#[derive(Resource)]
 pub struct MapSeed {
     map_elevation_seed: i32,
     map_moisture_seed: i32,
