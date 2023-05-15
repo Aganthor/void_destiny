@@ -150,10 +150,8 @@ fn setup(
 
 fn biome(elevation: f32, moisture: f32) -> u32 {
     if elevation < 0.1 {
-        println!("Deepwater...");
         return TileType::DeepWater as u32;
     } else if elevation < 0.12 {
-        println!("Shallowwater...");
         return TileType::ShallowWater as u32;
     }
 
@@ -233,16 +231,13 @@ fn move_event_listener(
                 if let Some(tile_entity) = tile_storage.get(&tile_pos) {
                     {
                         if let Ok(tile_texture) = tile_query.get(tile_entity) {
-                            println!("{:?}", tile_texture);
                             let walkable = tile_walkable(tile_texture.0);
                             if walkable {
-                                info!("Tile is walkable");
                                 move_legal.send(MoveLegal { 
                                     legal_move: true,
                                     destination: move_event.destination, 
                                 });
                             } else {
-                                info!("Tile is not walkable");
                                 move_legal.send(MoveLegal {
                                     legal_move: false,
                                     destination: None,
