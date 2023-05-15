@@ -15,7 +15,7 @@ use crate::events::{
 };
 //use crate::map::TileCollider;
 
-const ANIMATION_DURATION: u64 = 200;
+const ANIMATION_DURATION: f64 = 8.0;
 const MOVE_SPEED: f32 = 3.0;
 const PLAYER_TILE_SIZE: f32 = 32.0;
 
@@ -51,12 +51,11 @@ struct DirectionAnimations {
 
 impl Default for DirectionAnimations {
     fn default() -> Self {
-        let anim_duration = Duration::new(ANIMATION_DURATION, 0);
         DirectionAnimations {
-            up: Animation::from_indices(9..=11, FrameRate::from_frame_duration(anim_duration)),
-            down: Animation::from_indices(0..=2, FrameRate::from_frame_duration(anim_duration)),
-            left: Animation::from_indices(3..=5, FrameRate::from_frame_duration(anim_duration)),
-            right: Animation::from_indices(6..=8, FrameRate::from_frame_duration(anim_duration)),
+            up: Animation::from_indices(9..=11, FrameRate::from_fps(ANIMATION_DURATION)),
+            down: Animation::from_indices(0..=2, FrameRate::from_fps(ANIMATION_DURATION)),
+            left: Animation::from_indices(3..=5, FrameRate::from_fps(ANIMATION_DURATION)),
+            right: Animation::from_indices(6..=8, FrameRate::from_fps(ANIMATION_DURATION)),
         }
     }
 }
@@ -88,7 +87,7 @@ fn animate_player(
         &mut TextureAtlasSprite,
     )>,
 ) {
-    for (animation, mut animation_state, mut texture_atlas) in &mut animation_query {
+    for (animation, mut animation_state, mut texture_atlas) in animation_query.iter_mut() {
         animation_state.update(animation, time.delta());
         texture_atlas.index = animation_state.frame_index();
     }
@@ -210,8 +209,8 @@ fn move_player(
     for event in valid_move.iter() {
         if event.legal_move {
             for (mut transform, _) in q.iter_mut() {
-                println!("event pos.x = {}, event pos.y = {}", event.destination.unwrap().x, event.destination.unwrap().y);
-                println!("transform pos.x = {}, transform pos.y = {}", transform.translation.x, transform.translation.y);
+                // println!("event pos.x = {}, event pos.y = {}", event.destination.unwrap().x, event.destination.unwrap().y);
+                // println!("transform pos.x = {}, transform pos.y = {}", transform.translation.x, transform.translation.y);
                 transform.translation = Vec3::new(
                     event.destination.unwrap().x, 
                     event.destination.unwrap().y,
