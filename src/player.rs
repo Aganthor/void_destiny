@@ -13,7 +13,6 @@ use crate::events::{
     MoveEvent,
     MoveLegal
 };
-//use crate::map::TileCollider;
 
 const ANIMATION_DURATION: f64 = 8.0;
 const MOVE_SPEED: f32 = 3.0;
@@ -135,45 +134,11 @@ fn try_move_player(
         //println!("Just released a key... stop animation.");
     }
 
-    // let target = transform.translation + Vec3::new(x_delta, 0.0, 0.0);
-    // if check_for_collision(target, &wall_query) {
-    //     transform.translation = target;
-    // }    
-
-    // let target = transform.translation + Vec3::new(0.0, y_delta, 0.0);
-    // if check_for_collision(target, &wall_query) {
-    //     transform.translation = target;
-    // }    
-
     if send_event {
         player_move_event.destination = Some(destination);
         move_event.send(player_move_event);
     }
 }
-
-// fn check_for_collision(
-//     target_player_pos: Vec3,
-//     wall_query: &Query<(&Transform, (With<TileCollider>, Without<Player>))>
-// ) -> bool {
-//     if wall_query.is_empty() {
-//         println!("Wall query is empty...");
-//     }
-//     for (&wall_transform, _) in wall_query.iter() {
-//         println!("Player pos {}, tile pos {}", target_player_pos, wall_transform.translation);
-//         let collision = collide(
-//             target_player_pos,
-//             Vec2::splat(PLAYER_TILE_SIZE * 0.9),
-//             wall_transform.translation,
-//             Vec2::splat(PLAYER_TILE_SIZE)
-//         );
-//         if collision.is_some() {
-//             println!("Player destination is not walkable...");
-//             return false;
-//         }
-//     }
-//     //println!("Player destination is walkable...");
-//     true
-// }
 
 fn setup(
     mut commands: Commands,
@@ -209,8 +174,6 @@ fn move_player(
     for event in valid_move.iter() {
         if event.legal_move {
             for (mut transform, _) in q.iter_mut() {
-                // println!("event pos.x = {}, event pos.y = {}", event.destination.unwrap().x, event.destination.unwrap().y);
-                // println!("transform pos.x = {}, transform pos.y = {}", transform.translation.x, transform.translation.y);
                 transform.translation = Vec3::new(
                     event.destination.unwrap().x, 
                     event.destination.unwrap().y,
