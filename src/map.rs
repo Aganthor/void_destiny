@@ -112,7 +112,6 @@ fn setup(
             let elevation_value = elevation_noise.get(index as usize).unwrap();
             let moisture_value = moisture_noise.get(index as usize).unwrap();
             let texture_index = biome(*elevation_value, *moisture_value);
-            // let walkable = tile_walkable(texture_index);
 
             let tile_entity = commands
                 .spawn(TileBundle {
@@ -122,12 +121,6 @@ fn setup(
                     ..Default::default()
                 })
                 .id();
-            
-            // if !walkable {
-            //     println!("Tile @ {},{} is not walkable and it's index is {}", tile_pos.x, tile_pos.y, texture_index);
-            //     commands.entity(tile_entity).insert(TileCollider);
-                
-            // }
             tile_storage.set(&tile_pos, tile_entity);
         }
     }
@@ -148,6 +141,9 @@ fn setup(
     });
 }
 
+///
+/// Simple function to determine the biome depending on elevation and moisture.
+/// 
 fn biome(elevation: f32, moisture: f32) -> u32 {
     if elevation < 0.1 {
         return TileType::DeepWater as u32;
@@ -204,6 +200,11 @@ fn biome(elevation: f32, moisture: f32) -> u32 {
     TileType::Forest as u32 // tropical rain forest
 }
 
+///
+/// This method is used to check for event. The player system sends a MoveEvent and this system
+/// reads it. It then determines whether the destination tile is walkable or not. It then sends
+/// a MoveLegal event.
+/// 
 fn move_event_listener(
     mut move_events: EventReader<MoveEvent>,
     tilemap_q: Query<(
