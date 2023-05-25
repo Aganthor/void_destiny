@@ -16,16 +16,16 @@ use crate::tile_type::*;
 
 //#[derive(Resource, Inspectable)]
 #[derive(Resource)]
-pub struct MapSeed {
+pub struct OverWorldMapSeed {
     map_elevation_seed: i32,
     map_moisture_seed: i32,
 }
 
-impl Default for MapSeed {
+impl Default for OverWorldMapSeed {
     fn default() -> Self {
         let mut rng = rand::thread_rng();
 
-        MapSeed { 
+        OverWorldMapSeed { 
             map_elevation_seed: rng.gen(),
             map_moisture_seed: rng.gen(),
         }
@@ -55,12 +55,12 @@ impl Default for MapSeed {
 // }
 
 
-pub struct MapPlugin;
+pub struct OverWorldMapPlugin;
 
-impl Plugin for MapPlugin {
+impl Plugin for OverWorldMapPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(TilemapPlugin)
-            .init_resource::<MapSeed>()
+            .init_resource::<OverWorldMapSeed>()
             .add_startup_system(setup)
             .add_system(move_event_listener);
     }
@@ -69,7 +69,7 @@ impl Plugin for MapPlugin {
 fn setup(
     mut commands: Commands, 
     asset_server: Res<AssetServer>,
-    map_seed: Res<MapSeed>,
+    map_seed: Res<OverWorldMapSeed>,
 ) {
     let texture_handle = asset_server.load("tiles/overworld_tiles.png");
 
@@ -219,6 +219,9 @@ fn move_event_listener(
 ) {
     for move_event in move_events.iter() {
         for (map_size, grid_size, map_type, tile_storage, map_transform) in tilemap_q.iter() {
+            if move_event.destination.is_none() {
+                return;
+            }
             // Make sure that the destination is correct relative to the map due to any map transformation.
             let dest_in_map_pos: Vec2 = {
                 let destination_pos = Vec4::from((move_event.destination.unwrap(), 1.0));

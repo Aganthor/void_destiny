@@ -1,8 +1,5 @@
-use core::time::Duration;
-
 use bevy::{
     input::{keyboard::KeyCode, Input},
-    sprite::collide_aabb::collide,
     prelude::*,
 };
 
@@ -100,38 +97,35 @@ fn try_move_player(
     //wall_query: Query<(&Transform, (With<TileCollider>, Without<Player>))>,
     mut move_event: EventWriter<MoveEvent>,
 ) {
-    let (mut animation, mut transform, player) = player_query.single_mut();
+    let (mut animation, transform, player) = player_query.single_mut();
     let mut player_move_event = MoveEvent {
         origin: Some(transform.translation),
         destination: None,
     };
     let mut send_event = false;
     let mut destination = transform.translation;
-    let mut x_delta: f32 = 0.0;
-    let mut y_delta: f32 = 0.0;
 
     if keyboard_input.pressed(KeyCode::A) {
         *animation = PlayerAnimation(animations.left.clone());
-        //x_delta -=  player.speed * player.size * time.delta_seconds();
         destination.x -=  player.speed * player.size * time.delta_seconds();
         send_event = true;
     } else if keyboard_input.pressed(KeyCode::D) {
         *animation = PlayerAnimation(animations.right.clone());
-        //x_delta += player.speed * player.size * time.delta_seconds();
         destination.x +=  player.speed * player.size * time.delta_seconds();
         send_event = true;
     } else if keyboard_input.pressed(KeyCode::S) {
         *animation = PlayerAnimation(animations.down.clone());
-        //y_delta -= player.speed * player.size * time.delta_seconds();
         destination.y -=  player.speed * player.size * time.delta_seconds();
         send_event = true;
     } else if keyboard_input.pressed(KeyCode::W) {
         *animation = PlayerAnimation(animations.up.clone());
-        //y_delta += player.speed * player.size * time.delta_seconds();
         destination.y +=  player.speed * player.size * time.delta_seconds();
         send_event = true;
-    } else if keyboard_input.any_just_released([KeyCode::A, KeyCode::S, KeyCode::D, KeyCode::W]) {
-        //println!("Just released a key... stop animation.");
+    }
+    if keyboard_input.any_just_released([KeyCode::A, KeyCode::S, KeyCode::D, KeyCode::W]) {
+        send_event = false;
+        //info!("Need to create an idle animation!");
+        //*animation = PlayerAnimation(animations.idle.clone());
     }
 
     if send_event {
@@ -172,6 +166,9 @@ fn move_player(
     mut valid_move: EventReader<MoveLegal>,
 ) {
     for event in valid_move.iter() {
+        if event.destination.is_none() {
+            return;
+        }
         if event.legal_move {
             for (mut transform, _) in q.iter_mut() {
                 transform.translation = Vec3::new(

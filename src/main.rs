@@ -24,8 +24,8 @@ use constants::*;
 mod player;
 use player::*;
 
-mod map;
-use map::*;
+mod overworld_map;
+use overworld_map::*;
 
 mod events;
 use events::*;
@@ -49,7 +49,7 @@ fn main() {
         //.add_plugin(ImagePlugin::default_nearest())
         //.add_plugin(DebugPlugin)
         .add_plugin(PlayerPlugin)
-        .add_plugin(MapPlugin)
+        .add_plugin(OverWorldMapPlugin)
         .add_startup_system(setup_camera)
         .run();
 }
