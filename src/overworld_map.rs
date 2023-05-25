@@ -6,7 +6,7 @@ use rand::prelude::*;
 use simdnoise::*;
 //use bevy_inspector_egui::Inspectable;
 
-use crate::constants::*;
+use crate::{constants::*, player::Player};
 use crate::events::{MoveEvent, MoveLegal};
 use crate::tile_type::*;
 
@@ -62,6 +62,7 @@ impl Plugin for OverWorldMapPlugin {
         app.add_plugin(TilemapPlugin)
             .init_resource::<OverWorldMapSeed>()
             .add_startup_system(setup)
+            .add_system(detect_player_edge)
             .add_system(move_event_listener);
     }
 }
@@ -250,6 +251,34 @@ fn move_event_listener(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+pub fn detect_player_edge(
+    player_query: Query<&Transform, With<Player>>,
+    tilemap_q: Query<(
+        &TilemapSize,
+        &TilemapGridSize,
+        &TilemapType,
+        &TileStorage,
+        &Transform,
+    )>,    
+) {
+    let player = player_query.single();
+    for (map_size, grid_size, map_type, tile_storage, map_transform) in tilemap_q.iter() {
+        // Make sure that the destination is correct relative to the map due to any map transformation.
+        let dest_in_map_pos: Vec2 = {
+            let destination_pos = Vec4::from((player.translation, 1.0));
+            let dest_in_map_pos = map_transform.compute_matrix().inverse() * destination_pos;
+            dest_in_map_pos.xy()
+        };
+        // Once we have a world position we can transform it into a possible tile position.
+        if let Some(tile_pos) = TilePos::from_world_pos(&dest_in_map_pos, map_size, grid_size, map_type) {
+            
+            if tile_pos.x == 0 || tile_pos.x == OVERWORLD_SIZE_WIDTH || tile_pos.y == 0 || tile_pos.y == OVERWORLD_SIZE_HEIGHT {
+                println!("Tile position in detect_player_edge {:?}", tile_pos);
             }
         }
     }

@@ -9,3 +9,5 @@ pub struct MoveLegal {
     pub legal_move: bool,
     pub destination: Option<Vec3>,
 }
+
+pub struct EdgeDetectionEvent {}
