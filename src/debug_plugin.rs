@@ -4,7 +4,7 @@ use bevy_inspector_egui::quick::WorldInspectorPlugin;
 
 
 use crate::player::Player;
-use crate::overworld_map::OverWorldMapSeed;//{MapSeed, TileCollider};
+use crate::overworld_map::OverWorldMapConfig;//{MapSeed, TileCollider};
 
 pub struct DebugPlugin;
 

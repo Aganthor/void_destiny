@@ -45,8 +45,9 @@ fn main() {
                 ..default()
             }),
             ..default()
-        }))
-        //.add_plugin(ImagePlugin::default_nearest())
+        })
+        .set(ImagePlugin::default_nearest()),
+        )
         //.add_plugin(DebugPlugin)
         .add_plugin(PlayerPlugin)
         .add_plugin(OverWorldMapPlugin)

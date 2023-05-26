@@ -1,5 +1,3 @@
-//#[]
-
 use bevy::{math::Vec4Swizzles, prelude::*};
 use bevy_ecs_tilemap::prelude::*;
 use rand::prelude::*;
@@ -16,18 +14,24 @@ use crate::tile_type::*;
 
 //#[derive(Resource, Inspectable)]
 #[derive(Resource)]
-pub struct OverWorldMapSeed {
-    map_elevation_seed: i32,
-    map_moisture_seed: i32,
+pub struct OverWorldMapConfig {
+    elevation_seed: i32,
+    moisture_seed: i32,
+    magnification: f32,
+    offset_x: i32,
+    offset_y: i32,
 }
 
-impl Default for OverWorldMapSeed {
+impl Default for OverWorldMapConfig {
     fn default() -> Self {
         let mut rng = rand::thread_rng();
 
-        OverWorldMapSeed { 
-            map_elevation_seed: rng.gen(),
-            map_moisture_seed: rng.gen(),
+        OverWorldMapConfig { 
+            elevation_seed: rng.gen(),
+            moisture_seed: rng.gen(),
+            magnification: 7.0,        
+            offset_x: 0,
+            offset_y: 0,
         }
     }
 }
@@ -60,17 +64,18 @@ pub struct OverWorldMapPlugin;
 impl Plugin for OverWorldMapPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(TilemapPlugin)
-            .init_resource::<OverWorldMapSeed>()
-            .add_startup_system(setup)
+            .init_resource::<OverWorldMapConfig>()
+            .add_system(spawn_chunk)
             .add_system(detect_player_edge)
+            .add_system(change_x_offset)
             .add_system(move_event_listener);
     }
 }
 
-fn setup(
+fn spawn_chunk(
     mut commands: Commands, 
     asset_server: Res<AssetServer>,
-    map_seed: Res<OverWorldMapSeed>,
+    map_config: Res<OverWorldMapConfig>,
 ) {
     let texture_handle = asset_server.load("tiles/overworld_tiles.png");
 
@@ -82,15 +87,17 @@ fn setup(
     let mut tile_storage = TileStorage::empty(tilemap_size);
 
     let elevation_noise = NoiseBuilder::fbm_2d(
-        OVERWORLD_SIZE_WIDTH as usize,
-        OVERWORLD_SIZE_HEIGHT as usize,
+        OVERWORLD_SIZE_WIDTH as usize - map_config.offset_x as usize,
+        OVERWORLD_SIZE_HEIGHT as usize - map_config.offset_y as usize,
     )
     .with_freq(0.03)
     .with_gain(2.5)
     .with_lacunarity(0.55)
     .with_octaves(2)
-    .with_seed(map_seed.map_elevation_seed)
+    .with_seed(map_config.elevation_seed)
     .generate_scaled(0.0, 1.0);
+
+    println!("elevation_noise size is {}", elevation_noise.len());
 
     // Generate a new seed for the moisture noise
     let moisture_noise = NoiseBuilder::fbm_2d(
@@ -101,7 +108,7 @@ fn setup(
     .with_gain(3.5)
     .with_lacunarity(0.75)
     .with_octaves(4)
-    .with_seed(map_seed.map_moisture_seed)
+    .with_seed(map_config.moisture_seed)
     .generate_scaled(0.0, 1.0);
 
     // For each tile, create the proper entity with the corresponding texture according to it's
@@ -110,6 +117,7 @@ fn setup(
         for y in 0..tilemap_size.y {
             let tile_pos = TilePos { x, y };
             let index = x + OVERWORLD_SIZE_WIDTH * y;
+//            println!("Index is {}", index);
             let elevation_value = elevation_noise.get(index as usize).unwrap();
             let moisture_value = moisture_noise.get(index as usize).unwrap();
             let texture_index = biome(*elevation_value, *moisture_value);
@@ -274,5 +282,15 @@ pub fn detect_player_edge(
                 println!("Edge detected...");
             }
         }
+    }
+}
+
+fn change_x_offset(
+    keyboard_input: Res<Input<KeyCode>>,
+    mut map_config: ResMut<OverWorldMapConfig>,
+) {
+    if keyboard_input.just_pressed(KeyCode::L) {
+        map_config.offset_x += 1;
+        println!("New x_offset = {}", map_config.offset_x);
     }
 }
