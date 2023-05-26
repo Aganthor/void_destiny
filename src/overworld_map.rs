@@ -258,16 +258,10 @@ fn move_event_listener(
 
 pub fn detect_player_edge(
     player_query: Query<&Transform, With<Player>>,
-    tilemap_q: Query<(
-        &TilemapSize,
-        &TilemapGridSize,
-        &TilemapType,
-        &TileStorage,
-        &Transform,
-    )>,    
+    tilemap_q: Query<(&TilemapSize, &TilemapGridSize, &TilemapType, &Transform)>,    
 ) {
     let player = player_query.single();
-    for (map_size, grid_size, map_type, tile_storage, map_transform) in tilemap_q.iter() {
+    for (map_size, grid_size, map_type, map_transform) in tilemap_q.iter() {
         // Make sure that the destination is correct relative to the map due to any map transformation.
         let dest_in_map_pos: Vec2 = {
             let destination_pos = Vec4::from((player.translation, 1.0));
@@ -276,9 +270,8 @@ pub fn detect_player_edge(
         };
         // Once we have a world position we can transform it into a possible tile position.
         if let Some(tile_pos) = TilePos::from_world_pos(&dest_in_map_pos, map_size, grid_size, map_type) {
-            
-            if tile_pos.x == 0 || tile_pos.x == OVERWORLD_SIZE_WIDTH || tile_pos.y == 0 || tile_pos.y == OVERWORLD_SIZE_HEIGHT {
-                println!("Tile position in detect_player_edge {:?}", tile_pos);
+            if tile_pos.x == 0 || tile_pos.x == OVERWORLD_SIZE_WIDTH - 1 || tile_pos.y == 0 || tile_pos.y == OVERWORLD_SIZE_HEIGHT - 1 {
+                println!("Edge detected...");
             }
         }
     }
