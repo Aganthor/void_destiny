@@ -67,7 +67,7 @@ impl Plugin for OverWorldMapPlugin {
             .init_resource::<OverWorldMapConfig>()
             .add_system(spawn_chunk)
             .add_system(detect_player_edge)
-            .add_system(change_x_offset)
+            //.add_system(change_x_offset)
             .add_system(move_event_listener);
     }
 }
@@ -258,6 +258,11 @@ fn move_event_listener(
                             }
                         }
                     }
+                }
+
+                // Is the player about to move the the edge?
+                if tile_pos.x == 0 || tile_pos.x == OVERWORLD_SIZE_WIDTH - 1 || tile_pos.y == 0 || tile_pos.y == OVERWORLD_SIZE_HEIGHT - 1 {
+                    println!("Edge detected...");
                 }
             }
         }
