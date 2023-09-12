@@ -2,6 +2,7 @@ use bevy::{math::Vec4Swizzles, prelude::*};
 use bevy_ecs_tilemap::prelude::*;
 use rand::prelude::*;
 use simdnoise::*;
+use std::collections::HashSet;
 //use bevy_inspector_egui::Inspectable;
 
 use crate::{constants::*, player::Player};
@@ -36,6 +37,11 @@ impl Default for OverWorldMapConfig {
     }
 }
 
+#[derive(Default, Debug, Resource)]
+struct ChunkManager {
+    pub spawned_chunks: HashSet<IVec2>,
+}
+
 // #[derive(Component, Inspectable)]
 // struct NoiseSettings {
 //     frequency: f32,
@@ -65,6 +71,7 @@ impl Plugin for OverWorldMapPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(TilemapPlugin)
             .init_resource::<OverWorldMapConfig>()
+            .init_resource::<ChunkManager>()
             .add_system(spawn_chunk)
             .add_system(detect_player_edge)
             //.add_system(change_x_offset)
