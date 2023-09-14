@@ -12,6 +12,11 @@ use crate::tile_type::*;
 // #[derive(Component, Inspectable)]
 // pub struct TileCollider;
 
+/// How it should work.
+/// 1- when first loading, spawn chunk 0,0
+/// 2- listen for an edge detection
+/// 3- spawn a new chunk in the appropriate direction.
+
 
 //#[derive(Resource, Inspectable)]
 #[derive(Resource)]
@@ -42,29 +47,6 @@ struct ChunkManager {
     pub spawned_chunks: HashSet<IVec2>,
 }
 
-// #[derive(Component, Inspectable)]
-// struct NoiseSettings {
-//     frequency: f32,
-//     gain: f32,
-//     lacunarity: f32,
-//     octaves: f32,
-// }
-
-// impl NoiseSettings {
-//     fn new() -> Self {
-//         NoiseSettings { frequency: (), gain: (), lacunarity: (), octaves: () }
-//     }
-// }
-
-// #[derive(Bundle, Inspectable)]
-// struct Map {
-//     ecs_map: TilemapBundle,
-//     elevation_noise: NoiseSettings,
-//     moisture_noise: NoiseSettings,
-//     seeds: MapSeed,
-// }
-
-
 pub struct OverWorldMapPlugin;
 
 impl Plugin for OverWorldMapPlugin {
@@ -83,7 +65,13 @@ fn spawn_chunk(
     mut commands: Commands, 
     asset_server: Res<AssetServer>,
     map_config: Res<OverWorldMapConfig>,
+    chunk_manager: Res<ChunkManager>,
+    //chunk_pos: IVec2,
 ) {
+    // if chunk_manager.spawned_chunks.contains(chunk_pos) {
+    //     return;
+    // }
+
     let texture_handle = asset_server.load("tiles/overworld_tiles.png");
 
     let tilemap_size = TilemapSize {
@@ -124,7 +112,6 @@ fn spawn_chunk(
         for y in 0..tilemap_size.y {
             let tile_pos = TilePos { x, y };
             let index = x + OVERWORLD_SIZE_WIDTH * y;
-//            println!("Index is {}", index);
             let elevation_value = elevation_noise.get(index as usize).unwrap();
             let moisture_value = moisture_noise.get(index as usize).unwrap();
             let texture_index = biome(*elevation_value, *moisture_value);
