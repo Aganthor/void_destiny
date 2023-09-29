@@ -1,7 +1,8 @@
 use bevy::{math::Vec4Swizzles, prelude::*};
 use bevy_ecs_tilemap::prelude::*;
 use rand::prelude::*;
-use simdnoise::*;
+//use simdnoise::*;
+use noise::{NoiseFn, OpenSimplex, Seedable};
 use std::collections::HashSet;
 //use bevy_inspector_egui::Inspectable;
 
@@ -56,7 +57,7 @@ impl Plugin for OverWorldMapPlugin {
             .init_resource::<ChunkManager>()
             .add_system(spawn_chunk)
             .add_system(detect_player_edge)
-            //.add_system(change_x_offset)
+            //.add_syst7em(change_x_offset)
             .add_system(move_event_listener);
     }
 }
@@ -81,40 +82,43 @@ fn spawn_chunk(
     let tilemap_entity = commands.spawn_empty().id();
     let mut tile_storage = TileStorage::empty(tilemap_size);
 
-    let elevation_noise = NoiseBuilder::fbm_2d(
-        OVERWORLD_SIZE_WIDTH as usize - map_config.offset_x as usize,
-        OVERWORLD_SIZE_HEIGHT as usize - map_config.offset_y as usize,
-    )
-    .with_freq(0.03)
-    .with_gain(2.5)
-    .with_lacunarity(0.55)
-    .with_octaves(2)
-    .with_seed(map_config.elevation_seed)
-    .generate_scaled(0.0, 1.0);
+    let open_simplex_elevation = OpenSimplex::new(map_config.elevation_seed as u32);
+    let open_simple_moisture = OpenSimplex::new(map_config.moisture_seed as u32);
 
-    println!("elevation_noise size is {}", elevation_noise.len());
+    // let elevation_noise = NoiseBuilder::fbm_2d(
+    //     OVERWORLD_SIZE_WIDTH as usize - map_config.offset_x as usize,
+    //     OVERWORLD_SIZE_HEIGHT as usize - map_config.offset_y as usize,
+    // )
+    // .with_freq(0.03)
+    // .with_gain(2.5)
+    // .with_lacunarity(0.55)
+    // .with_octaves(2)
+    // .with_seed(map_config.elevation_seed)
+    // .generate_scaled(0.0, 1.0);
+
+    // println!("elevation_noise size is {}", elevation_noise.len());
 
     // Generate a new seed for the moisture noise
-    let moisture_noise = NoiseBuilder::fbm_2d(
-        OVERWORLD_SIZE_WIDTH as usize,
-        OVERWORLD_SIZE_HEIGHT as usize,
-    )
-    .with_freq(0.03)
-    .with_gain(3.5)
-    .with_lacunarity(0.75)
-    .with_octaves(4)
-    .with_seed(map_config.moisture_seed)
-    .generate_scaled(0.0, 1.0);
+    // let moisture_noise = NoiseBuilder::fbm_2d(
+    //     OVERWORLD_SIZE_WIDTH as usize,
+    //     OVERWORLD_SIZE_HEIGHT as usize,
+    // )
+    // .with_freq(0.03)
+    // .with_gain(3.5)
+    // .with_lacunarity(0.75)
+    // .with_octaves(4)
+    // .with_seed(map_config.moisture_seed)
+    // .generate_scaled(0.0, 1.0);
 
     // For each tile, create the proper entity with the corresponding texture according to it's
     // height.
     for x in 0..tilemap_size.x {
         for y in 0..tilemap_size.y {
             let tile_pos = TilePos { x, y };
-            let index = x + OVERWORLD_SIZE_WIDTH * y;
-            let elevation_value = elevation_noise.get(index as usize).unwrap();
-            let moisture_value = moisture_noise.get(index as usize).unwrap();
-            let texture_index = biome(*elevation_value, *moisture_value);
+            //let index = x + OVERWORLD_SIZE_WIDTH * y;
+            let elevation_value = open_simplex_elevation.get([x as f64, y as f64]);//elevation_noise.get(index as usize).unwrap();
+            let moisture_value = open_simple_moisture.get([x as f64, y as f64]);//moisture_noise.get(index as usize).unwrap();
+            let texture_index = biome(elevation_value, moisture_value);
 
             let tile_entity = commands
                 .spawn(TileBundle {
@@ -147,7 +151,7 @@ fn spawn_chunk(
 ///
 /// Simple function to determine the biome depending on elevation and moisture.
 /// 
-fn biome(elevation: f32, moisture: f32) -> u32 {
+fn biome(elevation: f64, moisture: f64) -> u32 {
     if elevation < 0.1 {
         return TileType::DeepWater as u32;
     } else if elevation < 0.12 {
