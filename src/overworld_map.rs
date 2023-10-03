@@ -25,6 +25,7 @@ pub struct OverWorldMapConfig {
     elevation_seed: i32,
     moisture_seed: i32,
     magnification: f32,
+    frequency: f64,
     offset_x: i32,
     offset_y: i32,
 }
@@ -36,7 +37,8 @@ impl Default for OverWorldMapConfig {
         OverWorldMapConfig { 
             elevation_seed: rng.gen(),
             moisture_seed: rng.gen(),
-            magnification: 7.0,        
+            magnification: 7.0,
+            frequency: 3.68,
             offset_x: 0,
             offset_y: 0,
         }
@@ -85,39 +87,16 @@ fn spawn_chunk(
     let open_simplex_elevation = OpenSimplex::new(map_config.elevation_seed as u32);
     let open_simple_moisture = OpenSimplex::new(map_config.moisture_seed as u32);
 
-    // let elevation_noise = NoiseBuilder::fbm_2d(
-    //     OVERWORLD_SIZE_WIDTH as usize - map_config.offset_x as usize,
-    //     OVERWORLD_SIZE_HEIGHT as usize - map_config.offset_y as usize,
-    // )
-    // .with_freq(0.03)
-    // .with_gain(2.5)
-    // .with_lacunarity(0.55)
-    // .with_octaves(2)
-    // .with_seed(map_config.elevation_seed)
-    // .generate_scaled(0.0, 1.0);
-
-    // println!("elevation_noise size is {}", elevation_noise.len());
-
-    // Generate a new seed for the moisture noise
-    // let moisture_noise = NoiseBuilder::fbm_2d(
-    //     OVERWORLD_SIZE_WIDTH as usize,
-    //     OVERWORLD_SIZE_HEIGHT as usize,
-    // )
-    // .with_freq(0.03)
-    // .with_gain(3.5)
-    // .with_lacunarity(0.75)
-    // .with_octaves(4)
-    // .with_seed(map_config.moisture_seed)
-    // .generate_scaled(0.0, 1.0);
-
     // For each tile, create the proper entity with the corresponding texture according to it's
     // height.
     for x in 0..tilemap_size.x {
         for y in 0..tilemap_size.y {
             let tile_pos = TilePos { x, y };
             //let index = x + OVERWORLD_SIZE_WIDTH * y;
-            let elevation_value = open_simplex_elevation.get([x as f64, y as f64]);//elevation_noise.get(index as usize).unwrap();
-            let moisture_value = open_simple_moisture.get([x as f64, y as f64]);//moisture_noise.get(index as usize).unwrap();
+            let nx: f64 = x as f64 / OVERWORLD_SIZE_WIDTH as f64 - 0.5;
+            let ny: f64 = y as f64 / OVERWORLD_SIZE_HEIGHT as f64 - 0.5;
+            let elevation_value = open_simplex_elevation.get([map_config.frequency * nx, map_config.frequency * ny]);
+            let moisture_value = open_simple_moisture.get([map_config.frequency * nx, map_config.frequency * ny]);
             let texture_index = biome(elevation_value, moisture_value);
 
             let tile_entity = commands
