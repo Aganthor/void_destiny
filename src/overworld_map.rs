@@ -1,10 +1,11 @@
+use bevy::ecs::reflect;
 use bevy::{math::Vec4Swizzles, prelude::*};
 use bevy_ecs_tilemap::prelude::*;
 use rand::prelude::*;
-//use simdnoise::*;
-use noise::{NoiseFn, OpenSimplex, Seedable};
+use noise::{NoiseFn, OpenSimplex, Seedable, Fbm, MultiFractal};
 use std::collections::HashSet;
-//use bevy_inspector_egui::Inspectable;
+use bevy_inspector_egui::prelude::*;
+use bevy_inspector_egui::quick::ResourceInspectorPlugin;
 
 use crate::{constants::*, player::Player};
 use crate::events::{MoveEvent, MoveLegal};
@@ -20,12 +21,17 @@ use crate::tile_type::*;
 
 
 //#[derive(Resource, Inspectable)]
-#[derive(Resource)]
+#[derive(Reflect, Resource, InspectorOptions)]
+#[reflect(Resource, InspectorOptions)]
 pub struct OverWorldMapConfig {
     elevation_seed: i32,
     moisture_seed: i32,
     magnification: f32,
     frequency: f64,
+    octaves: f32,
+    lacunarity: f32,
+    gain: f32,
+    amplitude: f32,
     offset_x: i32,
     offset_y: i32,
 }
@@ -39,6 +45,10 @@ impl Default for OverWorldMapConfig {
             moisture_seed: rng.gen(),
             magnification: 7.0,
             frequency: 3.68,
+            octaves: 5.0,
+            lacunarity: 1.8,
+            gain: 0.5,
+            amplitude: 0.5,            
             offset_x: 0,
             offset_y: 0,
         }
@@ -56,7 +66,9 @@ impl Plugin for OverWorldMapPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(TilemapPlugin)
             .init_resource::<OverWorldMapConfig>()
+            .register_type::<OverWorldMapConfig>()
             .init_resource::<ChunkManager>()
+            .add_plugin(ResourceInspectorPlugin::<OverWorldMapConfig>::default())
             .add_system(spawn_chunk)
             .add_system(detect_player_edge)
             //.add_syst7em(change_x_offset)
@@ -85,6 +97,11 @@ fn spawn_chunk(
     let mut tile_storage = TileStorage::empty(tilemap_size);
 
     let open_simplex_elevation = OpenSimplex::new(map_config.elevation_seed as u32);
+    let fbm = Fbm::<OpenSimplex>::new(map_config.elevation_seed as u32)
+        .set_octaves(map_config.octaves as usize)
+        .set_frequency(map_config.frequency)
+        .set_lacunarity(map_config.lacunarity as f64);
+    
     let open_simple_moisture = OpenSimplex::new(map_config.moisture_seed as u32);
 
     // For each tile, create the proper entity with the corresponding texture according to it's
@@ -95,7 +112,13 @@ fn spawn_chunk(
             //let index = x + OVERWORLD_SIZE_WIDTH * y;
             let nx: f64 = x as f64 / OVERWORLD_SIZE_WIDTH as f64 - 0.5;
             let ny: f64 = y as f64 / OVERWORLD_SIZE_HEIGHT as f64 - 0.5;
-            let elevation_value = open_simplex_elevation.get([map_config.frequency * nx, map_config.frequency * ny]);
+            let mut elevation_value = fbm.get([nx, ny]);
+            
+            // elevation_value = 1.0 * fbm.get([1.0 * nx, 1.0 * ny]);
+            // elevation_value += 0.5 * fbm.get([2.0 * nx, 2.0 * ny]);
+            // elevation_value += 0.25 * fbm.get([4.0 * nx, 4.0 * ny]);
+            // elevation_value /= 1.0 + 0.25 + 0.5;
+            
             let moisture_value = open_simple_moisture.get([map_config.frequency * nx, map_config.frequency * ny]);
             let texture_index = biome(elevation_value, moisture_value);
 
@@ -229,7 +252,8 @@ fn move_event_listener(
                                 });
                             } else {
                                 move_legal.send(MoveLegal {
-                                    legal_move: false,
+                                    //legal_move: false,
+                                    legal_move: true,
                                     destination: None,
                                  });
                             }
