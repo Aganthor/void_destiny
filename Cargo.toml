@@ -13,10 +13,10 @@ debug = 2
 opt-level = 3
 
 [dependencies]
-bevy = "0.10.1"
+bevy = "0.11.3"
 benimator = "4.1.2"
-bevy_ecs_tilemap = { version = "0.10.0" }
+bevy_ecs_tilemap = { version = "0.11.1" }
 #simdnoise = "3.1.6"
 rand = "0.8.5"
-bevy-inspector-egui = "0.18.3"
+bevy-inspector-egui = "0.20.0"
 noise = "0.8.2"

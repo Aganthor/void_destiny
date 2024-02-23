@@ -69,9 +69,9 @@ impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<DirectionAnimations>()
             .add_startup_system(setup)
-            .add_system(try_move_player.in_base_set(CoreSet::PreUpdate))
-            .add_system(move_player.in_base_set(CoreSet::Update))
-            .add_system(animate_player.in_base_set(CoreSet::PostUpdate));
+            .add_systems(PreUpdate, try_move_player)
+            .add_systems(Update, move_player)
+            .add_systems(PostUpdate, animate_player);
     }
 }
 

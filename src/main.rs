@@ -51,7 +51,7 @@ fn main() {
         //.add_plugin(DebugPlugin)
         .add_plugin(PlayerPlugin)
         .add_plugin(OverWorldMapPlugin)
-        .add_startup_system(setup_camera)
+        .add_systems(Startup, setup_camera)
         .run();
 }
 
