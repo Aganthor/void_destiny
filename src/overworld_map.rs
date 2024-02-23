@@ -64,15 +64,15 @@ pub struct OverWorldMapPlugin;
 
 impl Plugin for OverWorldMapPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugin(TilemapPlugin)
+        app.add_plugins(TilemapPlugin)
             .init_resource::<OverWorldMapConfig>()
             .register_type::<OverWorldMapConfig>()
             .init_resource::<ChunkManager>()
-            .add_plugin(ResourceInspectorPlugin::<OverWorldMapConfig>::default())
-            .add_system(spawn_chunk)
-            .add_system(detect_player_edge)
+            .add_plugins(ResourceInspectorPlugin::<OverWorldMapConfig>::default())
+            .add_systems(Update, spawn_chunk)
+            .add_systems(Update, detect_player_edge)
             //.add_syst7em(change_x_offset)
-            .add_system(move_event_listener);
+            .add_systems(Update, move_event_listener);
     }
 }
 
@@ -226,7 +226,7 @@ fn move_event_listener(
     tile_query: Query<&mut TileTextureIndex>,
     mut move_legal: EventWriter<MoveLegal>,
 ) {
-    for move_event in move_events.iter() {
+    for move_event in move_events.read() {
         for (map_size, grid_size, map_type, tile_storage, map_transform) in tilemap_q.iter() {
             if move_event.destination.is_none() {
                 return;

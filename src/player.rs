@@ -68,7 +68,7 @@ pub struct PlayerPlugin;
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<DirectionAnimations>()
-            .add_startup_system(setup)
+            .add_systems(Startup, setup)
             .add_systems(PreUpdate, try_move_player)
             .add_systems(Update, move_player)
             .add_systems(PostUpdate, animate_player);
@@ -165,7 +165,7 @@ fn move_player(
     mut q: Query<(&mut Transform, With<Player>)>,
     mut valid_move: EventReader<MoveLegal>,
 ) {
-    for event in valid_move.iter() {
+    for event in valid_move.read() {
         if event.destination.is_none() {
             return;
         }
