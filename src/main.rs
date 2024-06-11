@@ -12,7 +12,7 @@
 
 use bevy::{
     prelude::*,
-    window::PresentMode, core_pipeline::clear_color::ClearColorConfig,
+    window::PresentMode, render::camera::ClearColorConfig,
 };
 
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
@@ -57,8 +57,9 @@ fn main() {
 
 fn setup_camera(mut commands: Commands) {
     commands.spawn(Camera2dBundle {
-        camera_2d: Camera2d { 
-            clear_color: ClearColorConfig::Custom(BG_COLOR)
+        camera: Camera { 
+            clear_color: ClearColorConfig::Custom(BG_COLOR),
+            ..Default::default()
         },
         ..Default::default()
     });

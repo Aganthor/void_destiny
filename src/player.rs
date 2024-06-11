@@ -1,5 +1,5 @@
 use bevy::{
-    input::{keyboard::KeyCode, Input},
+    input::{keyboard::KeyCode, ButtonInput},
     prelude::*,
 };
 
@@ -80,7 +80,7 @@ fn animate_player(
     mut animation_query: Query<(
         &PlayerAnimation,
         &mut PlayerAnimationState,
-        &mut TextureAtlasSprite,
+        &mut TextureAtlas,
     )>,
 ) {
     for (animation, mut animation_state, mut texture_atlas) in animation_query.iter_mut() {
@@ -90,7 +90,7 @@ fn animate_player(
 }
 
 fn try_move_player(
-    keyboard_input: Res<Input<KeyCode>>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
     animations: Res<DirectionAnimations>,
     time: Res<Time>,
     mut player_query: Query<(&mut PlayerAnimation, &mut Transform, &Player)>,
@@ -105,24 +105,24 @@ fn try_move_player(
     let mut send_event = false;
     let mut destination = transform.translation;
 
-    if keyboard_input.pressed(KeyCode::A) {
+    if keyboard_input.pressed(KeyCode::KeyA) {
         *animation = PlayerAnimation(animations.left.clone());
         destination.x -=  player.speed * player.size * time.delta_seconds();
         send_event = true;
-    } else if keyboard_input.pressed(KeyCode::D) {
+    } else if keyboard_input.pressed(KeyCode::KeyD) {
         *animation = PlayerAnimation(animations.right.clone());
         destination.x +=  player.speed * player.size * time.delta_seconds();
         send_event = true;
-    } else if keyboard_input.pressed(KeyCode::S) {
+    } else if keyboard_input.pressed(KeyCode::KeyS) {
         *animation = PlayerAnimation(animations.down.clone());
         destination.y -=  player.speed * player.size * time.delta_seconds();
         send_event = true;
-    } else if keyboard_input.pressed(KeyCode::W) {
+    } else if keyboard_input.pressed(KeyCode::KeyW) {
         *animation = PlayerAnimation(animations.up.clone());
         destination.y +=  player.speed * player.size * time.delta_seconds();
         send_event = true;
     }
-    if keyboard_input.any_just_released([KeyCode::A, KeyCode::S, KeyCode::D, KeyCode::W]) {
+    if keyboard_input.any_just_released([KeyCode::KeyA, KeyCode::KeyS, KeyCode::KeyD, KeyCode::KeyW]) {
         send_event = false;
         //info!("Need to create an idle animation!");
         //*animation = PlayerAnimation(animations.idle.clone());
@@ -137,18 +137,22 @@ fn try_move_player(
 fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    mut texture_atlases: ResMut<Assets<TextureAtlasLayout>>,
     direction_animations: Res<DirectionAnimations>,
 ) {
-    let texture_handle = asset_server.load("Male 01-1.png");
-    let texture_atlas =
-        TextureAtlas::from_grid(texture_handle, Vec2::new(32.0, 32.0), 3, 4, None, None);
-    let texture_atlas_handle = texture_atlases.add(texture_atlas);
+    let texture_handle: Handle<Image> = asset_server.load("Male 01-1.png");
+    let texture_atlas_layout =
+        TextureAtlasLayout::from_grid( Vec2::new(32.0, 32.0), 3, 4, None, None);
+    //let texture_atlas_handle = texture_atlases.add(texture_atlas);
     let player_position = Transform::from_translation(Vec3::Z * 10.0) * Transform::from_scale(Vec3::splat(1.0));
+    let layout_handle = texture_atlases.add(texture_atlas_layout);
 
     commands
         .spawn(SpriteSheetBundle {
-            texture_atlas: texture_atlas_handle,
+            atlas: TextureAtlas {
+                layout: layout_handle,
+                index: 1
+            },
             transform: player_position,
             ..default()
         })
@@ -162,7 +166,7 @@ fn setup(
 }
 
 fn move_player(
-    mut q: Query<(&mut Transform, With<Player>)>,
+    mut q: Query<&mut Transform, With<Player>>,
     mut valid_move: EventReader<MoveLegal>,
 ) {
     for event in valid_move.read() {
@@ -170,7 +174,7 @@ fn move_player(
             return;
         }
         if event.legal_move {
-            for (mut transform, _) in q.iter_mut() {
+            for mut transform in q.iter_mut() {
                 transform.translation = Vec3::new(
                     event.destination.unwrap().x, 
                     event.destination.unwrap().y,

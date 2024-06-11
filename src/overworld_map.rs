@@ -223,7 +223,7 @@ fn move_event_listener(
         &TileStorage,
         &Transform,
     )>,
-    tile_query: Query<&mut TileTextureIndex>,
+    mut tile_query: Query<&mut TileTextureIndex>,
     mut move_legal: EventWriter<MoveLegal>,
 ) {
     for move_event in move_events.read() {
@@ -292,10 +292,10 @@ pub fn detect_player_edge(
 }
 
 fn change_x_offset(
-    keyboard_input: Res<Input<KeyCode>>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
     mut map_config: ResMut<OverWorldMapConfig>,
 ) {
-    if keyboard_input.just_pressed(KeyCode::L) {
+    if keyboard_input.just_pressed(KeyCode::KeyL) {
         map_config.offset_x += 1;
         println!("New x_offset = {}", map_config.offset_x);
     }
