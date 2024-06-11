@@ -100,44 +100,56 @@ fn try_move_player(
     keyboard_input: Res<ButtonInput<KeyCode>>,
     animations: Res<DirectionAnimations>,
     time: Res<Time>,
-    mut player_query: Query<(&mut PlayerAnimation, &mut Transform, &Player)>,
-    //wall_query: Query<(&Transform, (With<TileCollider>, Without<Player>))>,
+    mut player_query: Query<(&mut PlayerAnimation, &mut Transform, &Player), Without<PlayerCamera>>,
+    mut camera_query: Query<&mut Transform, With<PlayerCamera>>,
     mut move_event: EventWriter<MoveEvent>,
 ) {
-    let (mut animation, transform, player) = player_query.single_mut();
-    let mut player_move_event = MoveEvent {
-        origin: Some(transform.translation),
-        destination: None,
-    };
-    let mut send_event = false;
-    let mut destination = transform.translation;
+    for mut camera_transform in camera_query.iter_mut() {
+        let mut direction = Vec3::ZERO;
 
-    if keyboard_input.pressed(KeyCode::KeyA) {
-        *animation = PlayerAnimation(animations.left.clone());
-        destination.x -=  player.speed * player.size * time.delta_seconds();
-        send_event = true;
-    } else if keyboard_input.pressed(KeyCode::KeyD) {
-        *animation = PlayerAnimation(animations.right.clone());
-        destination.x +=  player.speed * player.size * time.delta_seconds();
-        send_event = true;
-    } else if keyboard_input.pressed(KeyCode::KeyS) {
-        *animation = PlayerAnimation(animations.down.clone());
-        destination.y -=  player.speed * player.size * time.delta_seconds();
-        send_event = true;
-    } else if keyboard_input.pressed(KeyCode::KeyW) {
-        *animation = PlayerAnimation(animations.up.clone());
-        destination.y +=  player.speed * player.size * time.delta_seconds();
-        send_event = true;
-    }
-    if keyboard_input.any_just_released([KeyCode::KeyA, KeyCode::KeyS, KeyCode::KeyD, KeyCode::KeyW]) {
-        send_event = false;
-        //info!("Need to create an idle animation!");
-        //*animation = PlayerAnimation(animations.idle.clone());
-    }
+        let (mut animation, transform, player) = player_query.single_mut();
+        let mut player_move_event = MoveEvent {
+            origin: Some(transform.translation),
+            destination: None,
+        };
+        let mut send_event = false;
+        let mut destination = transform.translation;
+    
+        if keyboard_input.pressed(KeyCode::KeyA) {
+            *animation = PlayerAnimation(animations.left.clone());
+            destination.x -=  player.speed * player.size * time.delta_seconds();
+            send_event = true;
+            direction -= Vec3::new(1.0, 0.0, 0.0);
+        } else if keyboard_input.pressed(KeyCode::KeyD) {
+            *animation = PlayerAnimation(animations.right.clone());
+            destination.x +=  player.speed * player.size * time.delta_seconds();
+            send_event = true;
+            direction += Vec3::new(1.0, 0.0, 0.0);
+        } else if keyboard_input.pressed(KeyCode::KeyS) {
+            *animation = PlayerAnimation(animations.down.clone());
+            destination.y -=  player.speed * player.size * time.delta_seconds();
+            send_event = true;
+            direction -= Vec3::new(0.0, 1.0, 0.0);
+        } else if keyboard_input.pressed(KeyCode::KeyW) {
+            *animation = PlayerAnimation(animations.up.clone());
+            destination.y +=  player.speed * player.size * time.delta_seconds();
+            send_event = true;
+            direction += Vec3::new(0.0, 1.0, 0.0);
+        }
+        if keyboard_input.any_just_released([KeyCode::KeyA, KeyCode::KeyS, KeyCode::KeyD, KeyCode::KeyW]) {
+            send_event = false;
+            //info!("Need to create an idle animation!");
+            //*animation = PlayerAnimation(animations.idle.clone());
+        }
+    
+        if !send_event {
+            player_move_event.destination = Some(destination);
+            move_event.send(player_move_event);
+        }
 
-    if send_event {
-        player_move_event.destination = Some(destination);
-        move_event.send(player_move_event);
+        let z = camera_transform.translation.z;
+        camera_transform.translation += time.delta_seconds() * direction * 500.;
+        camera_transform.translation.z = z;
     }
 }
 

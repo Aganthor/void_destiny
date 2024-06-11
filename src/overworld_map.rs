@@ -1,5 +1,6 @@
 use bevy::{math::Vec4Swizzles, prelude::*};
 use bevy_ecs_tilemap::prelude::*;
+use bevy_ecs_tilemap::helpers;
 use rand::prelude::*;
 use noise::{NoiseFn, OpenSimplex, Fbm, MultiFractal};
 use std::collections::HashSet;
@@ -8,21 +9,14 @@ use bevy_inspector_egui::quick::ResourceInspectorPlugin;
 
 use crate::{constants::*, player::Player};
 use crate::events::{MoveEvent, MoveLegal};
-use crate::tile_type::*;
+use crate::{tile_type::*, PlayerCamera};
 
 // #[derive(Component, Inspectable)]
 // pub struct TileCollider;
 
-/// How it should work.
-/// 1- when first loading, spawn chunk 0,0
-/// 2- listen for an edge detection
-/// 3- spawn a new chunk in the appropriate direction.
-/// 
-/// 
-
 const TILE_SIZE: TilemapTileSize = TilemapTileSize { x: 32.0, y: 32.0 };
 // For this example, don't choose too large a chunk size.
-const CHUNK_SIZE: UVec2 = UVec2 { x: 4, y: 4 };
+const CHUNK_SIZE: UVec2 = UVec2 { x: 8, y: 8 };
 // Render chunk sizes are set to 4 render chunks per user specified chunk.
 const RENDER_CHUNK_SIZE: UVec2 = UVec2 {
     x: CHUNK_SIZE.x * 2,
@@ -77,25 +71,127 @@ impl Plugin for OverWorldMapPlugin {
         app.add_plugins(TilemapPlugin)
             .init_resource::<OverWorldMapConfig>()
             .register_type::<OverWorldMapConfig>()
-            .init_resource::<ChunkManager>()
+            .insert_resource(ChunkManager::default())
             .add_plugins(ResourceInspectorPlugin::<OverWorldMapConfig>::default())
-            .add_systems(Update, spawn_chunk)
-            .add_systems(Update, detect_player_edge)
-            .add_systems(Update, move_event_listener);
+            .add_systems(Startup, setup_camera)
+            .add_systems(Update, camera_movement)
+            .add_systems(Update, spawn_chunk_around_camera)
+            .add_systems(Update, despawn_outofrange_chunks);
+            //.add_systems(Update, detect_player_edge)
+            //.add_systems(Update, move_event_listener);
+    }
+}
+
+fn camera_movement(
+    time: Res<Time>,
+    keyboard_input: Res<ButtonInput<KeyCode>>,
+    mut query: Query<(&mut Transform, &mut OrthographicProjection), With<Camera>>,
+) {
+    for (mut transform, mut ortho) in query.iter_mut() {
+        let mut direction = Vec3::ZERO;
+
+        if keyboard_input.pressed(KeyCode::KeyA) {
+            direction -= Vec3::new(1.0, 0.0, 0.0);
+        }
+
+        if keyboard_input.pressed(KeyCode::KeyD) {
+            direction += Vec3::new(1.0, 0.0, 0.0);
+        }
+
+        if keyboard_input.pressed(KeyCode::KeyW) {
+            direction += Vec3::new(0.0, 1.0, 0.0);
+        }
+
+        if keyboard_input.pressed(KeyCode::KeyS) {
+            direction -= Vec3::new(0.0, 1.0, 0.0);
+        }
+
+        if keyboard_input.pressed(KeyCode::KeyZ) {
+            ortho.scale += 0.1;
+        }
+
+        if keyboard_input.pressed(KeyCode::KeyX) {
+            ortho.scale -= 0.1;
+        }
+
+        if ortho.scale < 0.5 {
+            ortho.scale = 0.5;
+        }
+
+        let z = transform.translation.z;
+        transform.translation += time.delta_seconds() * direction * 500.;
+        // Important! We need to restore the Z values when moving the camera around.
+        // Bevy has a specific camera setup and this can mess with how our layers are shown.
+        transform.translation.z = z;
+    }    
+}
+
+fn setup_camera(mut commands: Commands) {
+    commands.spawn(Camera2dBundle {
+        camera: Camera { 
+            clear_color: ClearColorConfig::Custom(BG_COLOR),
+            ..Default::default()
+        },
+        ..Default::default()
+    });
+}
+
+fn camera_pos_to_chunk_pos(camera_pos: &Vec2) -> IVec2 {
+    let camera_pos = camera_pos.as_ivec2();
+    let chunk_size: IVec2 = IVec2::new(CHUNK_SIZE.x as i32, CHUNK_SIZE.y as i32);
+    let tile_size: IVec2 = IVec2::new(TILE_SIZE.x as i32, TILE_SIZE.y as i32);
+    camera_pos / (chunk_size * tile_size)
+}
+
+fn spawn_chunk_around_camera(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    camera_query: Query<&Transform, With<Camera>>,
+    mut chunk_manager: ResMut<ChunkManager>,
+    map_config: Res<OverWorldMapConfig>,
+) {
+    for transform in camera_query.iter() {
+        let camera_chunk_pos = camera_pos_to_chunk_pos(&transform.translation.xy());
+        //println!("Camera position: {:?}", camera_chunk_pos);
+        for y in (camera_chunk_pos.y - 2)..(camera_chunk_pos.y + 2) {
+            for x in (camera_chunk_pos.x - 2)..(camera_chunk_pos.x + 2) {
+                if !chunk_manager.spawned_chunks.contains(&IVec2::new(x, y)) {
+                    chunk_manager.spawned_chunks.insert(IVec2::new(x, y));
+                    spawn_chunk(&mut commands, &asset_server, &map_config, IVec2::new(x, y), camera_chunk_pos);
+                }
+            }
+        }
+    }
+
+}
+
+fn despawn_outofrange_chunks(
+    mut commands: Commands,
+    camera_query: Query<&Transform, With<Camera>>,
+    chunks_query: Query<(Entity, &Transform)>,
+    mut chunk_manager: ResMut<ChunkManager>
+) {
+    for camera_transform in camera_query.iter() {
+        for (entity, chunk_transform) in chunks_query.iter() {
+            let chunk_pos = chunk_transform.translation.xy();
+            let distance = camera_transform.translation.xy().distance(chunk_pos);
+            if distance > 320.0 {
+                let x = (chunk_pos.x / (CHUNK_SIZE.x as f32 * TILE_SIZE.x as f32)).floor() as i32;
+                let y = (chunk_pos.y / (CHUNK_SIZE.y as f32 * TILE_SIZE.y as f32)).floor() as i32;
+                chunk_manager.spawned_chunks.remove(&IVec2::new(x, y));
+                commands.entity(entity).despawn_recursive();
+            }
+        }
     }
 }
 
 fn spawn_chunk(
-    mut commands: Commands, 
-    asset_server: Res<AssetServer>,
-    map_config: Res<OverWorldMapConfig>,
-    chunk_manager: Res<ChunkManager>,
-    //chunk_pos: IVec2,
+    commands: &mut Commands, 
+    asset_server: &AssetServer,
+    map_config: &OverWorldMapConfig,
+    chunk_pos: IVec2,
+    camera_pos: IVec2,
 ) {
-    // if chunk_manager.spawned_chunks.contains(chunk_pos) {
-    //     return;
-    // }
-
     let texture_handle = asset_server.load("tiles/overworld_tiles.png");
 
     let tilemap_size = TilemapSize {
@@ -103,7 +199,7 @@ fn spawn_chunk(
         y: OVERWORLD_SIZE_HEIGHT,
     };
     let tilemap_entity = commands.spawn_empty().id();
-    let mut tile_storage = TileStorage::empty(tilemap_size);
+    let mut tile_storage = TileStorage::empty(CHUNK_SIZE.into());
 
     //let open_simplex_elevation = OpenSimplex::new(map_config.elevation_seed as u32);
     let fbm = Fbm::<OpenSimplex>::new(map_config.elevation_seed as u32)
@@ -115,14 +211,15 @@ fn spawn_chunk(
 
     // For each tile, create the proper entity with the corresponding texture according to it's
     // height.
-    for x in 0..tilemap_size.x {
-        for y in 0..tilemap_size.y {
+    //for x in 0..CHUNK_SIZE.x - camera_pos.x as u32 {
+    for x in 0..CHUNK_SIZE.x {        
+        //for y in 0..CHUNK_SIZE.y - camera_pos.y as u32 {
+        for y in 0..CHUNK_SIZE.y {            
             let tile_pos = TilePos { x, y };
             //let index = x + OVERWORLD_SIZE_WIDTH * y;
             let nx: f64 = x as f64 / OVERWORLD_SIZE_WIDTH as f64 - 0.5;
             let ny: f64 = y as f64 / OVERWORLD_SIZE_HEIGHT as f64 - 0.5;
             let mut elevation_value = fbm.get([nx, ny]);
-            
             
             elevation_value += 1.0 * fbm.get([1.0 * nx, 1.0 * ny]);
             elevation_value += 0.5 * fbm.get([2.0 * nx, 2.0 * ny]);
@@ -141,22 +238,32 @@ fn spawn_chunk(
                     ..Default::default()
                 })
                 .id();
+            commands.entity(tilemap_entity).add_child(tile_entity);
             tile_storage.set(&tile_pos, tile_entity);
         }
     }
 
-    let tile_size = TilemapTileSize { x: 32.0, y: 32.0 };
-    let grid_size = tile_size.into();
-    let map_type = TilemapType::default();
+    let transform = Transform::from_translation(Vec3::new(
+        chunk_pos.x as f32 * CHUNK_SIZE.x as f32 * TILE_SIZE.x,
+        chunk_pos.y as f32 * CHUNK_SIZE.y as f32 * TILE_SIZE.y,
+        0.0,
+    ));
+
+    // let tile_size = TilemapTileSize { x: 32.0, y: 32.0 };
+    // let grid_size = tile_size.into();
+    // let map_type = TilemapType::default();
 
     commands.entity(tilemap_entity).insert(TilemapBundle {
-        grid_size,
-        map_type,
-        size: tilemap_size,
+        grid_size: TILE_SIZE.into(),
+        size: CHUNK_SIZE.into(),
         storage: tile_storage,
         texture: TilemapTexture::Single(texture_handle),
-        tile_size,
-        transform: get_tilemap_center_transform(&tilemap_size, &grid_size, &map_type, 0.0),
+        tile_size: TILE_SIZE,
+        transform,
+        render_settings: TilemapRenderSettings {
+            render_chunk_size: RENDER_CHUNK_SIZE,
+            ..Default::default()
+        },
         ..Default::default()
     });
 }
