@@ -210,20 +210,13 @@ fn zoom_map(
     let mut projection = query_camera.single_mut();
     
     for ev in scroll_evr.read() {
-        match ev.unit {
-            MouseScrollUnit::Line => {
-                if ev.y == -1.0 {
-                    // zoom in
-                    projection.scale /= 1.25;
-                } else if ev.y == 1.0 {
-                    // zoom out
-                    projection.scale *= 1.25;                
-                }
-
-                println!("Scroll (line units): vertical: {}, horizontal: {}", ev.y, ev.x);
-            }
-            MouseScrollUnit::Pixel => {
-                println!("Scroll (pixel units): vertical: {}, horizontal: {}", ev.y, ev.x);
+        if ev.unit == MouseScrollUnit::Line {
+            if ev.y == -1.0 {
+                // zoom in
+                projection.scale *= 1.25;
+            } else if ev.y == 1.0 {
+                // zoom out
+                projection.scale /= 1.25;                
             }
         }
     }    
