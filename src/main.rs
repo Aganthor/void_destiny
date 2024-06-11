@@ -51,17 +51,7 @@ fn main() {
         //.add_plugin(DebugPlugin)
         .add_plugins(PlayerPlugin)
         .add_plugins(OverWorldMapPlugin)
-        .add_systems(Startup, setup_camera)
         .run();
 }
 
-fn setup_camera(mut commands: Commands) {
-    commands.spawn(Camera2dBundle {
-        camera: Camera { 
-            clear_color: ClearColorConfig::Custom(BG_COLOR),
-            ..Default::default()
-        },
-        ..Default::default()
-    });
-}
 

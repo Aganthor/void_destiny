@@ -11,6 +11,8 @@ use crate::events::{
     MoveLegal
 };
 
+use crate::constants::{BG_COLOR};
+
 const ANIMATION_DURATION: f64 = 8.0;
 const MOVE_SPEED: f32 = 3.0;
 const PLAYER_TILE_SIZE: f32 = 32.0;
@@ -61,6 +63,8 @@ impl Default for DirectionAnimations {
 //     x: i32,
 //     y: i32,
 // }
+#[derive(Component)]
+pub struct PlayerCamera;
 
 #[derive(Default)]
 pub struct PlayerPlugin;
@@ -69,6 +73,7 @@ impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<DirectionAnimations>()
             .add_systems(Startup, setup)
+            .add_systems(Startup, setup_camera)
             .add_systems(PreUpdate, try_move_player)
             .add_systems(Update, move_player)
             .add_systems(PostUpdate, animate_player);
@@ -163,6 +168,17 @@ fn setup(
             speed: MOVE_SPEED,
             size: PLAYER_TILE_SIZE
         });
+}
+
+fn setup_camera(mut commands: Commands) {
+    commands.spawn(Camera2dBundle {
+        camera: Camera { 
+            clear_color: ClearColorConfig::Custom(BG_COLOR),
+            ..Default::default()
+        },
+        ..Default::default()
+    })
+    .insert(PlayerCamera);
 }
 
 fn move_player(
