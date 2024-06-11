@@ -17,6 +17,17 @@ use crate::tile_type::*;
 /// 1- when first loading, spawn chunk 0,0
 /// 2- listen for an edge detection
 /// 3- spawn a new chunk in the appropriate direction.
+/// 
+/// 
+
+const TILE_SIZE: TilemapTileSize = TilemapTileSize { x: 32.0, y: 32.0 };
+// For this example, don't choose too large a chunk size.
+const CHUNK_SIZE: UVec2 = UVec2 { x: 4, y: 4 };
+// Render chunk sizes are set to 4 render chunks per user specified chunk.
+const RENDER_CHUNK_SIZE: UVec2 = UVec2 {
+    x: CHUNK_SIZE.x * 2,
+    y: CHUNK_SIZE.y * 2,
+};
 
 
 //#[derive(Resource, Inspectable)]
@@ -113,7 +124,7 @@ fn spawn_chunk(
             let mut elevation_value = fbm.get([nx, ny]);
             
             
-            elevation_value = 1.0 * fbm.get([1.0 * nx, 1.0 * ny]);
+            elevation_value += 1.0 * fbm.get([1.0 * nx, 1.0 * ny]);
             elevation_value += 0.5 * fbm.get([2.0 * nx, 2.0 * ny]);
             elevation_value += 0.25 * fbm.get([4.0 * nx, 4.0 * ny]);
             elevation_value /= 1.0 + 0.25 + 0.5;
