@@ -2,6 +2,7 @@ use bevy::{
     input::{keyboard::KeyCode, ButtonInput},
     prelude::*,
 };
+use bevy::input::mouse::{MouseWheel, MouseScrollUnit};
 
 use benimator::*;
 //use bevy_inspector_egui::Inspectable;
@@ -76,6 +77,7 @@ impl Plugin for PlayerPlugin {
             .add_systems(Startup, setup_camera)
             .add_systems(PreUpdate, try_move_player)
             .add_systems(Update, move_player)
+            .add_systems(Update, zoom_map)
             .add_systems(PostUpdate, animate_player);
     }
 }
@@ -199,4 +201,30 @@ fn move_player(
             }
         }
     }
+}
+
+fn zoom_map(
+    mut query_camera: Query<&mut OrthographicProjection, With<PlayerCamera>>,
+    mut scroll_evr: EventReader<MouseWheel>,
+) {
+    let mut projection = query_camera.single_mut();
+    
+    for ev in scroll_evr.read() {
+        match ev.unit {
+            MouseScrollUnit::Line => {
+                if ev.y == -1.0 {
+                    // zoom in
+                    projection.scale /= 1.25;
+                } else if ev.y == 1.0 {
+                    // zoom out
+                    projection.scale *= 1.25;                
+                }
+
+                println!("Scroll (line units): vertical: {}, horizontal: {}", ev.y, ev.x);
+            }
+            MouseScrollUnit::Pixel => {
+                println!("Scroll (pixel units): vertical: {}, horizontal: {}", ev.y, ev.x);
+            }
+        }
+    }    
 }
