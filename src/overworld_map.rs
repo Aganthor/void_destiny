@@ -1,8 +1,7 @@
-use bevy::ecs::reflect;
 use bevy::{math::Vec4Swizzles, prelude::*};
 use bevy_ecs_tilemap::prelude::*;
 use rand::prelude::*;
-use noise::{NoiseFn, OpenSimplex, Seedable, Fbm, MultiFractal};
+use noise::{NoiseFn, OpenSimplex, Fbm, MultiFractal};
 use std::collections::HashSet;
 use bevy_inspector_egui::prelude::*;
 use bevy_inspector_egui::quick::ResourceInspectorPlugin;
@@ -44,9 +43,9 @@ impl Default for OverWorldMapConfig {
             elevation_seed: rng.gen(),
             moisture_seed: rng.gen(),
             magnification: 7.0,
-            frequency: 3.68,
+            frequency: 1.12,
             octaves: 5.0,
-            lacunarity: 1.8,
+            lacunarity: 0.7,
             gain: 0.5,
             amplitude: 0.5,            
             offset_x: 0,
@@ -71,7 +70,6 @@ impl Plugin for OverWorldMapPlugin {
             .add_plugins(ResourceInspectorPlugin::<OverWorldMapConfig>::default())
             .add_systems(Update, spawn_chunk)
             .add_systems(Update, detect_player_edge)
-            //.add_syst7em(change_x_offset)
             .add_systems(Update, move_event_listener);
     }
 }
@@ -96,7 +94,7 @@ fn spawn_chunk(
     let tilemap_entity = commands.spawn_empty().id();
     let mut tile_storage = TileStorage::empty(tilemap_size);
 
-    let open_simplex_elevation = OpenSimplex::new(map_config.elevation_seed as u32);
+    //let open_simplex_elevation = OpenSimplex::new(map_config.elevation_seed as u32);
     let fbm = Fbm::<OpenSimplex>::new(map_config.elevation_seed as u32)
         .set_octaves(map_config.octaves as usize)
         .set_frequency(map_config.frequency)
@@ -114,10 +112,12 @@ fn spawn_chunk(
             let ny: f64 = y as f64 / OVERWORLD_SIZE_HEIGHT as f64 - 0.5;
             let mut elevation_value = fbm.get([nx, ny]);
             
-            // elevation_value = 1.0 * fbm.get([1.0 * nx, 1.0 * ny]);
-            // elevation_value += 0.5 * fbm.get([2.0 * nx, 2.0 * ny]);
-            // elevation_value += 0.25 * fbm.get([4.0 * nx, 4.0 * ny]);
-            // elevation_value /= 1.0 + 0.25 + 0.5;
+            
+            elevation_value = 1.0 * fbm.get([1.0 * nx, 1.0 * ny]);
+            elevation_value += 0.5 * fbm.get([2.0 * nx, 2.0 * ny]);
+            elevation_value += 0.25 * fbm.get([4.0 * nx, 4.0 * ny]);
+            elevation_value /= 1.0 + 0.25 + 0.5;
+            elevation_value = elevation_value.powf(1.28);
             
             let moisture_value = open_simple_moisture.get([map_config.frequency * nx, map_config.frequency * ny]);
             let texture_index = biome(elevation_value, moisture_value);
@@ -154,7 +154,12 @@ fn spawn_chunk(
 /// Simple function to determine the biome depending on elevation and moisture.
 /// 
 fn biome(elevation: f64, moisture: f64) -> u32 {
-    if elevation < 0.1 {
+    if elevation < 0.11 {
+        TileType::DeepWater as u32
+    } else {
+        TileType::Grass as u32
+    }
+/*    if elevation < 0.1 {
         return TileType::DeepWater as u32;
     } else if elevation < 0.12 {
         return TileType::ShallowWater as u32;
@@ -206,7 +211,7 @@ fn biome(elevation: f64, moisture: f64) -> u32 {
         return TileType::Forest as u32;
     } //tropical seasonal forest
 
-    TileType::Forest as u32 // tropical rain forest
+    TileType::Forest as u32 // tropical rain forest*/
 }
 
 ///
@@ -223,7 +228,7 @@ fn move_event_listener(
         &TileStorage,
         &Transform,
     )>,
-    mut tile_query: Query<&mut TileTextureIndex>,
+    tile_query: Query<&mut TileTextureIndex>,
     mut move_legal: EventWriter<MoveLegal>,
 ) {
     for move_event in move_events.read() {
@@ -254,7 +259,8 @@ fn move_event_listener(
                                 move_legal.send(MoveLegal {
                                     //legal_move: false,
                                     legal_move: true,
-                                    destination: None,
+                                    //destination: None,
+                                    destination: move_event.destination,
                                  });
                             }
                         }
