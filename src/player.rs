@@ -144,20 +144,20 @@ fn try_move_player(
 fn setup(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    mut texture_atlases: ResMut<Assets<TextureAtlasLayout>>,
+    mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     direction_animations: Res<DirectionAnimations>,
 ) {
-    let texture_handle: Handle<Image> = asset_server.load("Male 01-1.png");
-    let texture_atlas_layout =
-        TextureAtlasLayout::from_grid( Vec2::new(32.0, 32.0), 3, 4, None, None);
-    //let texture_atlas_handle = texture_atlases.add(texture_atlas);
+    let texture: Handle<Image> = asset_server.load("Male 01-1.png");
+    let layout= TextureAtlasLayout::from_grid( Vec2::new(32.0, 32.0), 3, 4, None, None);
+    let texture_atlas_layout = texture_atlas_layouts.add(layout);
+    
     let player_position = Transform::from_translation(Vec3::Z * 10.0) * Transform::from_scale(Vec3::splat(1.0));
-    let layout_handle = texture_atlases.add(texture_atlas_layout);
 
     commands
         .spawn(SpriteSheetBundle {
+            texture,
             atlas: TextureAtlas {
-                layout: layout_handle,
+                layout: texture_atlas_layout,
                 index: 1
             },
             transform: player_position,
