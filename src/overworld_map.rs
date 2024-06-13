@@ -16,11 +16,7 @@ use crate::{tile_type::*, PlayerCamera};
 
 const TILE_SIZE: TilemapTileSize = TilemapTileSize { x: 32.0, y: 32.0 };
 
-// Render chunk sizes are set to 4 render chunks per user specified chunk.
-const RENDER_CHUNK_SIZE: UVec2 = UVec2 {
-    x: CHUNK_SIZE.x * 2,
-    y: CHUNK_SIZE.y * 2,
-};
+
 
 
 //#[derive(Resource, Inspectable)]
@@ -192,30 +188,58 @@ fn spawn_chunk(
     camera_pos: IVec2,
 ) {
     let texture_handle = asset_server.load("tiles/overworld_tiles.png");
-
-    let tilemap_size = TilemapSize {
-        x: OVERWORLD_SIZE_WIDTH,
-        y: OVERWORLD_SIZE_HEIGHT,
-    };
     let tilemap_entity = commands.spawn_empty().id();
     let mut tile_storage = TileStorage::empty(CHUNK_SIZE.into());
-
-    //let open_simplex_elevation = OpenSimplex::new(map_config.elevation_seed as u32);
     let fbm = Fbm::<OpenSimplex>::new(map_config.elevation_seed as u32)
         .set_octaves(map_config.octaves as usize)
         .set_frequency(map_config.frequency)
         .set_lacunarity(map_config.lacunarity as f64);
-    
     let open_simple_moisture = OpenSimplex::new(map_config.moisture_seed as u32);
 
-    // For each tile, create the proper entity with the corresponding texture according to it's
-    // height.
-    //for x in 0..CHUNK_SIZE.x - camera_pos.x as u32 {
-    for x in 0..CHUNK_SIZE.x {        
-        //for y in 0..CHUNK_SIZE.y - camera_pos.y as u32 {
+    let start_col = f32::floor(camera_pos.x as f32 / OVERWORLD_SIZE.x as f32) as u32;
+    let end_col = start_col + RENDER_CHUNK_SIZE.x / OVERWORLD_SIZE.x;
+    let start_row = f32::floor(camera_pos.y as f32 / OVERWORLD_SIZE.y as f32) as u32;
+    let end_row = start_row + RENDER_CHUNK_SIZE.y / OVERWORLD_SIZE.y;
+
+    let offset_x = -camera_pos.x as u32 + start_col * OVERWORLD_SIZE.x;
+    let offset_y = -camera_pos.y as u32 + start_row * OVERWORLD_SIZE.y;
+    println!("Camera position : {}", camera_pos);
+
+    //println!("Start col = {}, End col = {}; Start row = {}, End row = {}", start_col, end_col, start_row, end_row);
+
+    for c in start_col..end_col {
+        for r in start_row..end_row {
+            let x = (c - start_col) * OVERWORLD_SIZE.x + offset_x;
+            let y = (r - start_row) * OVERWORLD_SIZE.y + offset_y;
+            //println!("X = {}, Y = {}", x, y);
+            let tile_pos = TilePos { x, y };
+            
+            let mut elevation_value = fbm.get([x as f64, y as f64]);
+            
+            elevation_value += 1.0 * fbm.get([1.0 * x as f64, 1.0 * y as f64]);
+            elevation_value += 0.5 * fbm.get([2.0 * x as f64, 2.0 * y as f64]);
+            elevation_value += 0.25 * fbm.get([4.0 * x as f64, 4.0 * y as f64]);
+            elevation_value /= 1.0 + 0.25 + 0.5;
+            elevation_value = elevation_value.powf(1.28);
+            
+            let moisture_value = open_simple_moisture.get([map_config.frequency * x as f64, map_config.frequency * y as f64]);
+            let texture_index = biome(elevation_value, moisture_value);
+
+            let tile_entity = commands
+                .spawn(TileBundle {
+                    position: tile_pos,
+                    tilemap_id: TilemapId(tilemap_entity),
+                    texture_index: TileTextureIndex(texture_index),
+                    ..Default::default()
+                })
+                .id();
+            commands.entity(tilemap_entity).add_child(tile_entity);
+            tile_storage.set(&tile_pos, tile_entity);
+        }
+    }
+    /*for x in 0..CHUNK_SIZE.x {        
         for y in 0..CHUNK_SIZE.y {            
             let tile_pos = TilePos { x, y };
-            //let index = x + OVERWORLD_SIZE_WIDTH * y;
             let nx: f64 = x as f64 / OVERWORLD_SIZE_WIDTH as f64 - 0.5;
             let ny: f64 = y as f64 / OVERWORLD_SIZE_HEIGHT as f64 - 0.5;
             let mut elevation_value = fbm.get([nx, ny]);
@@ -240,7 +264,7 @@ fn spawn_chunk(
             commands.entity(tilemap_entity).add_child(tile_entity);
             tile_storage.set(&tile_pos, tile_entity);
         }
-    }
+    }*/
 
     let transform = Transform::from_translation(Vec3::new(
         chunk_pos.x as f32 * CHUNK_SIZE.x as f32 * TILE_SIZE.x,
