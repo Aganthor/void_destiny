@@ -27,6 +27,9 @@ use player::*;
 mod overworld_map;
 use overworld_map::*;
 
+mod worldgen;
+use worldgen::*;
+
 mod events;
 use events::*;
 
@@ -50,7 +53,8 @@ fn main() {
         )
         //.add_plugin(DebugPlugin)
         //.add_plugins(PlayerPlugin)
-        .add_plugins(OverWorldMapPlugin)
+        //.add_plugins(OverWorldMapPlugin)
+        .add_plugins(WorldGenPlugin)
         .run();
 }
 
