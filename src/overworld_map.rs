@@ -15,8 +15,7 @@ use crate::{tile_type::*, PlayerCamera};
 // pub struct TileCollider;
 
 const TILE_SIZE: TilemapTileSize = TilemapTileSize { x: 32.0, y: 32.0 };
-// For this example, don't choose too large a chunk size.
-const CHUNK_SIZE: UVec2 = UVec2 { x: 8, y: 8 };
+
 // Render chunk sizes are set to 4 render chunks per user specified chunk.
 const RENDER_CHUNK_SIZE: UVec2 = UVec2 {
     x: CHUNK_SIZE.x * 2,
