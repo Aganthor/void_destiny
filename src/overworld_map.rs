@@ -147,7 +147,7 @@ fn spawn_chunk_around_camera(
 ) {
     for transform in camera_query.iter() {
         let camera_chunk_pos = camera_pos_to_chunk_pos(&transform.translation.xy());
-        //println!("Camera position: {:?}", camera_chunk_pos);
+        info!("Camera chunk position: {:?}", camera_chunk_pos);
         for y in (camera_chunk_pos.y - 2)..(camera_chunk_pos.y + 2) {
             for x in (camera_chunk_pos.x - 2)..(camera_chunk_pos.x + 2) {
                 if !chunk_manager.spawned_chunks.contains(&IVec2::new(x, y)) {
@@ -160,6 +160,9 @@ fn spawn_chunk_around_camera(
 
 }
 
+///
+/// Will despawn chunks that are out of range of the camera.
+///
 fn despawn_outofrange_chunks(
     mut commands: Commands,
     camera_query: Query<&Transform, With<Camera>>,
@@ -180,6 +183,10 @@ fn despawn_outofrange_chunks(
     }
 }
 
+
+///
+/// This function spawns a chunk of the overworld map.
+/// 
 fn spawn_chunk(
     commands: &mut Commands, 
     asset_server: &AssetServer,
@@ -203,45 +210,45 @@ fn spawn_chunk(
 
     let offset_x = -camera_pos.x as u32 + start_col * OVERWORLD_SIZE.x;
     let offset_y = -camera_pos.y as u32 + start_row * OVERWORLD_SIZE.y;
-    println!("Camera position : {}", camera_pos);
+    info!("Columns: {} to {}, Rows: {} to {}", start_col, end_col, start_row, end_row);
+    info!("Offset X = {}, Offset Y = {}", offset_x, offset_y);
 
-    //println!("Start col = {}, End col = {}; Start row = {}, End row = {}", start_col, end_col, start_row, end_row);
-
-    for c in start_col..end_col {
-        for r in start_row..end_row {
-            let x = (c - start_col) * OVERWORLD_SIZE.x + offset_x;
-            let y = (r - start_row) * OVERWORLD_SIZE.y + offset_y;
-            //println!("X = {}, Y = {}", x, y);
-            let tile_pos = TilePos { x, y };
-            
-            let mut elevation_value = fbm.get([x as f64, y as f64]);
-            
-            elevation_value += 1.0 * fbm.get([1.0 * x as f64, 1.0 * y as f64]);
-            elevation_value += 0.5 * fbm.get([2.0 * x as f64, 2.0 * y as f64]);
-            elevation_value += 0.25 * fbm.get([4.0 * x as f64, 4.0 * y as f64]);
-            elevation_value /= 1.0 + 0.25 + 0.5;
-            elevation_value = elevation_value.powf(1.28);
-            
-            let moisture_value = open_simple_moisture.get([map_config.frequency * x as f64, map_config.frequency * y as f64]);
-            let texture_index = biome(elevation_value, moisture_value);
-
-            let tile_entity = commands
-                .spawn(TileBundle {
-                    position: tile_pos,
-                    tilemap_id: TilemapId(tilemap_entity),
-                    texture_index: TileTextureIndex(texture_index),
-                    ..Default::default()
-                })
-                .id();
-            commands.entity(tilemap_entity).add_child(tile_entity);
-            tile_storage.set(&tile_pos, tile_entity);
-        }
-    }
-    /*for x in 0..CHUNK_SIZE.x {        
+    // for c in start_col..end_col + 1 {
+    //     for r in start_row..end_row + 1 {
+    //         let x = (c - start_col) * OVERWORLD_SIZE.x + offset_x;
+    //         let y = (r - start_row) * OVERWORLD_SIZE.y + offset_y;
+    //         let tile_pos = TilePos { x, y };
+    //         let mut elevation_value = fbm.get([x as f64, y as f64]);
+    //         
+    //         elevation_value += 1.0 * fbm.get([1.0 * x as f64, 1.0 * y as f64]);
+    //         elevation_value += 0.5 * fbm.get([2.0 * x as f64, 2.0 * y as f64]);
+    //         elevation_value += 0.25 * fbm.get([4.0 * x as f64, 4.0 * y as f64]);
+    //         elevation_value /= 1.0 + 0.25 + 0.5;
+    //         elevation_value = elevation_value.powf(1.28);
+    //         
+    //         let moisture_value = open_simple_moisture.get([map_config.frequency * x as f64, map_config.frequency * y as f64]);
+    //         let texture_index = biome(elevation_value, moisture_value);
+    //         info!("moisture_value = {}, elevation_value = {}, texture_index = {}", moisture_value, elevation_value, texture_index);
+    // 
+    //         let tile_entity = commands
+    //             .spawn(TileBundle {
+    //                 position: tile_pos,
+    //                 tilemap_id: TilemapId(tilemap_entity),
+    //                 texture_index: TileTextureIndex(texture_index),
+    //                 ..Default::default()
+    //             })
+    //             .id();
+    //         commands.entity(tilemap_entity).add_child(tile_entity);
+    //         tile_storage.set(&tile_pos, tile_entity);
+    //     }
+    // }
+    for x in 0..CHUNK_SIZE.x {        
         for y in 0..CHUNK_SIZE.y {            
             let tile_pos = TilePos { x, y };
-            let nx: f64 = x as f64 / OVERWORLD_SIZE_WIDTH as f64 - 0.5;
-            let ny: f64 = y as f64 / OVERWORLD_SIZE_HEIGHT as f64 - 0.5;
+            // let nx: f64 = x as f64 / OVERWORLD_SIZE_WIDTH as f64 - 0.5;
+            // let ny: f64 = y as f64 / OVERWORLD_SIZE_HEIGHT as f64 - 0.5;
+            let nx: f64 = (chunk_pos.x as f64 * CHUNK_SIZE.x as f64 + x as f64) / OVERWORLD_SIZE_WIDTH as f64 - 0.5;
+            let ny: f64 = (chunk_pos.y as f64 * CHUNK_SIZE.y as f64 + y as f64) / OVERWORLD_SIZE_HEIGHT as f64 - 0.5;
             let mut elevation_value = fbm.get([nx, ny]);
             
             elevation_value += 1.0 * fbm.get([1.0 * nx, 1.0 * ny]);
@@ -264,7 +271,7 @@ fn spawn_chunk(
             commands.entity(tilemap_entity).add_child(tile_entity);
             tile_storage.set(&tile_pos, tile_entity);
         }
-    }*/
+    }
 
     let transform = Transform::from_translation(Vec3::new(
         chunk_pos.x as f32 * CHUNK_SIZE.x as f32 * TILE_SIZE.x,
@@ -295,12 +302,12 @@ fn spawn_chunk(
 /// Simple function to determine the biome depending on elevation and moisture.
 /// 
 fn biome(elevation: f64, moisture: f64) -> u32 {
-    if elevation < 0.11 {
-        TileType::DeepWater as u32
-    } else {
-        TileType::Grass as u32
-    }
-/*    if elevation < 0.1 {
+    // if elevation < 0.11 {
+    //     TileType::DeepWater as u32
+    // } else {
+    //     TileType::Grass as u32
+    // }
+    if elevation < 0.1 {
         return TileType::DeepWater as u32;
     } else if elevation < 0.12 {
         return TileType::ShallowWater as u32;
@@ -352,7 +359,7 @@ fn biome(elevation: f64, moisture: f64) -> u32 {
         return TileType::Forest as u32;
     } //tropical seasonal forest
 
-    TileType::Forest as u32 // tropical rain forest*/
+    TileType::Forest as u32 // tropical rain forest
 }
 
 ///

@@ -53,8 +53,8 @@ fn main() {
         )
         //.add_plugin(DebugPlugin)
         //.add_plugins(PlayerPlugin)
-        //.add_plugins(OverWorldMapPlugin)
-        .add_plugins(WorldGenPlugin)
+        .add_plugins(OverWorldMapPlugin)
+        //.add_plugins(WorldGenPlugin)
         .run();
 }
 
