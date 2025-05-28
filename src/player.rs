@@ -77,24 +77,24 @@ impl Plugin for PlayerPlugin {
             .add_systems(Startup, setup_camera)
             .add_systems(PreUpdate, try_move_player)
             .add_systems(Update, move_player)
-            .add_systems(Update, zoom_map)
-            .add_systems(PostUpdate, animate_player);
+            .add_systems(Update, zoom_map);
+//            .add_systems(PostUpdate, animate_player);
     }
 }
 
-fn animate_player(
-    time: Res<Time>,
-    mut animation_query: Query<(
-        &PlayerAnimation,
-        &mut PlayerAnimationState,
-        &mut TextureAtlas,
-    )>,
-) {
-    for (animation, mut animation_state, mut texture_atlas) in animation_query.iter_mut() {
-        animation_state.update(animation, time.delta());
-        texture_atlas.index = animation_state.frame_index();
-    }
-}
+// fn animate_player(
+//     time: Res<Time>,
+//     mut animation_query: Query<(
+//         &PlayerAnimation,
+//         &mut PlayerAnimationState,
+//         &mut TextureAtlas,
+//     )>,
+// ) {
+//     for (animation, mut animation_state, mut texture_atlas) in animation_query.iter_mut() {
+//         animation_state.update(animation, time.delta());
+//         texture_atlas.index = animation_state.frame_index();
+//     }
+// }
 
 fn try_move_player(
     keyboard_input: Res<ButtonInput<KeyCode>>,
@@ -117,22 +117,22 @@ fn try_move_player(
     
         if keyboard_input.pressed(KeyCode::KeyA) {
             *animation = PlayerAnimation(animations.left.clone());
-            destination.x -=  player.speed * player.size * time.delta_seconds();
+            destination.x -=  player.speed * player.size * time.delta_secs();
             send_event = true;
             direction -= Vec3::new(1.0, 0.0, 0.0);
         } else if keyboard_input.pressed(KeyCode::KeyD) {
             *animation = PlayerAnimation(animations.right.clone());
-            destination.x +=  player.speed * player.size * time.delta_seconds();
+            destination.x +=  player.speed * player.size * time.delta_secs();
             send_event = true;
             direction += Vec3::new(1.0, 0.0, 0.0);
         } else if keyboard_input.pressed(KeyCode::KeyS) {
             *animation = PlayerAnimation(animations.down.clone());
-            destination.y -=  player.speed * player.size * time.delta_seconds();
+            destination.y -=  player.speed * player.size * time.delta_secs();
             send_event = true;
             direction -= Vec3::new(0.0, 1.0, 0.0);
         } else if keyboard_input.pressed(KeyCode::KeyW) {
             *animation = PlayerAnimation(animations.up.clone());
-            destination.y +=  player.speed * player.size * time.delta_seconds();
+            destination.y +=  player.speed * player.size * time.delta_secs();
             send_event = true;
             direction += Vec3::new(0.0, 1.0, 0.0);
         }
@@ -148,7 +148,7 @@ fn try_move_player(
         }
 
         let z = camera_transform.translation.z;
-        camera_transform.translation += time.delta_seconds() * direction * 500.;
+        camera_transform.translation += time.delta_secs() * direction * 500.;
         camera_transform.translation.z = z;
     }
 }
@@ -166,15 +166,14 @@ fn setup(
     let player_position = Transform::from_translation(Vec3::Z * 10.0) * Transform::from_scale(Vec3::splat(1.0));
 
     commands
-        .spawn(SpriteSheetBundle {
-            texture,
-            atlas: TextureAtlas {
-                layout: texture_atlas_layout,
-                index: 1
-            },
-            transform: player_position,
-            ..default()
-        })
+        .spawn(
+            Sprite {
+                image: texture,
+                texture_atlas: Some(TextureAtlas {
+                    layout: texture_atlas_layout,
+                    index: 1,
+                }),
+                ..default()})
         .insert(PlayerAnimation(direction_animations.left.clone()))
         .insert(PlayerAnimationState::default())
         .insert(Direction::Left)
@@ -182,6 +181,25 @@ fn setup(
             speed: MOVE_SPEED,
             size: PLAYER_TILE_SIZE
         });
+
+
+        // 
+        // .spawn(SpriteBundle {
+        //     texture,
+        //     atlas: TextureAtlas {
+        //         layout: texture_atlas_layout,
+        //         index: 1
+        //     },
+        //     transform: player_position,
+        //     ..default()
+        // })
+        // .insert(PlayerAnimation(direction_animations.left.clone()))
+        // .insert(PlayerAnimationState::default())
+        // .insert(Direction::Left)
+        // .insert(Player {
+        //     speed: MOVE_SPEED,
+        //     size: PLAYER_TILE_SIZE
+        // });
 }
 
 fn setup_camera(mut commands: Commands) {
