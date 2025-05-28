@@ -52,7 +52,7 @@ fn main() {
         .set(ImagePlugin::default_nearest()),
         )
         //.add_plugin(DebugPlugin)
-        //.add_plugins(PlayerPlugin)
+        .add_plugins(PlayerPlugin)
         .add_plugins(OverWorldMapPlugin)
         //.add_plugins(WorldGenPlugin)
         .run();

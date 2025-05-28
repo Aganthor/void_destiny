@@ -17,8 +17,6 @@ use crate::{tile_type::*, PlayerCamera};
 const TILE_SIZE: TilemapTileSize = TilemapTileSize { x: 32.0, y: 32.0 };
 
 
-
-
 //#[derive(Resource, Inspectable)]
 #[derive(Reflect, Resource, InspectorOptions)]
 #[reflect(Resource, InspectorOptions)]
@@ -68,12 +66,12 @@ impl Plugin for OverWorldMapPlugin {
             .register_type::<OverWorldMapConfig>()
             .insert_resource(ChunkManager::default())
             .add_plugins(ResourceInspectorPlugin::<OverWorldMapConfig>::default())
-            .add_systems(Startup, setup_camera)
+//            .add_systems(Startup, setup_camera)
             .add_systems(Update, camera_movement)
             .add_systems(Update, spawn_chunk_around_camera)
-            .add_systems(Update, despawn_outofrange_chunks);
-            //.add_systems(Update, detect_player_edge)
-            //.add_systems(Update, move_event_listener);
+            .add_systems(Update, despawn_outofrange_chunks)
+            .add_systems(Update, detect_player_edge)
+            .add_systems(Update, move_event_listener);
     }
 }
 
@@ -121,15 +119,15 @@ fn camera_movement(
     }    
 }
 
-fn setup_camera(mut commands: Commands) {
-    commands.spawn(Camera2dBundle {
-        camera: Camera { 
-            clear_color: ClearColorConfig::Custom(BG_COLOR),
-            ..Default::default()
-        },
-        ..Default::default()
-    });
-}
+// fn setup_camera(mut commands: Commands) {
+//     commands.spawn(Camera2dBundle {
+//         camera: Camera { 
+//             clear_color: ClearColorConfig::Custom(BG_COLOR),
+//             ..Default::default()
+//         },
+//         ..Default::default()
+//     });
+// }
 
 fn camera_pos_to_chunk_pos(camera_pos: &Vec2) -> IVec2 {
     let camera_pos = camera_pos.as_ivec2();
@@ -370,7 +368,7 @@ fn move_event_listener(
                     }
                 }
 
-                // Is the player about to move the the edge?
+                // Is the player about to move to the edge?
                 if tile_pos.x == 0 || tile_pos.x == OVERWORLD_SIZE_WIDTH - 1 || tile_pos.y == 0 || tile_pos.y == OVERWORLD_SIZE_HEIGHT - 1 {
                     println!("Edge detected...");
                 }

@@ -160,7 +160,7 @@ fn setup(
     direction_animations: Res<DirectionAnimations>,
 ) {
     let texture: Handle<Image> = asset_server.load("Male 01-1.png");
-    let layout= TextureAtlasLayout::from_grid( Vec2::new(32.0, 32.0), 3, 4, None, None);
+    let layout= TextureAtlasLayout::from_grid( UVec2::new(32, 32), 3, 4, None, None);
     let texture_atlas_layout = texture_atlas_layouts.add(layout);
     
     let player_position = Transform::from_translation(Vec3::Z * 10.0) * Transform::from_scale(Vec3::splat(1.0));
