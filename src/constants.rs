@@ -1,3 +1,4 @@
+use bevy::color::Srgba;
 use bevy::prelude::Color;
 use bevy::math::UVec2;
 
@@ -18,4 +19,4 @@ pub const OVERWORLD_SIZE_WIDTH: u32 = 32;
 pub const OVERWORLD_SIZE_HEIGHT: u32 = 24;
 
 // Colors
-pub const BG_COLOR: Color = Color::rgb(38. / 255., 20. / 255., 40. / 255.);
+pub const BG_COLOR: Color = Color::srgb(38. / 255., 20. / 255., 40. / 255.);

@@ -1,6 +1,7 @@
 use bevy::{
     input::{keyboard::KeyCode, ButtonInput},
     prelude::*,
+    render::camera::*,
 };
 use bevy::input::mouse::{MouseWheel, MouseScrollUnit};
 
@@ -107,7 +108,7 @@ fn try_move_player(
     for mut camera_transform in camera_query.iter_mut() {
         let mut direction = Vec3::ZERO;
 
-        let (mut animation, transform, player) = player_query.single_mut();
+        let Ok((mut animation, transform, player)) = player_query.single_mut();
         let mut player_move_event = MoveEvent {
             origin: Some(transform.translation),
             destination: None,
@@ -203,14 +204,19 @@ fn setup(
 }
 
 fn setup_camera(mut commands: Commands) {
-    commands.spawn(Camera2dBundle {
-        camera: Camera { 
-            clear_color: ClearColorConfig::Custom(BG_COLOR),
-            ..Default::default()
-        },
-        ..Default::default()
-    })
-    .insert(PlayerCamera);
+    commands.spawn(
+        (Camera2d::default(), PlayerCamera)
+        
+    );
+
+    // commands.spawn(Camera2d {
+    //     camera: Camera { 
+    //         clear_color: ClearColorConfig::Custom(BG_COLOR),
+    //         ..Default::default()
+    //     },
+    //     ..Default::default()
+    // })
+    // .insert(PlayerCamera);
 }
 
 fn move_player(
@@ -234,20 +240,22 @@ fn move_player(
 }
 
 fn zoom_map(
-    mut query_camera: Query<&mut OrthographicProjection, With<PlayerCamera>>,
+    mut query_camera: Query<&mut Projection, With<PlayerCamera>>,
     mut scroll_evr: EventReader<MouseWheel>,
 ) {
     let mut projection = query_camera.single_mut();
-    
-    for ev in scroll_evr.read() {
-        if ev.unit == MouseScrollUnit::Line {
-            if ev.y == -1.0 {
-                // zoom in
-                projection.scale *= 1.25;
-            } else if ev.y == 1.0 {
-                // zoom out
-                projection.scale /= 1.25;                
+    // Camera zoom controls
+    if let Projection::Orthographic(projection2d) = &mut *projection {
+        for ev in scroll_evr.read() {
+            if ev.unit == MouseScrollUnit::Line {
+                if ev.y == -1.0 {
+                    // zoom in
+                    projection2d.scale *= 1.25;
+                } else if ev.y == 1.0 {
+                    // zoom out
+                    projection2d.scale /= 1.25;                
+                }
             }
-        }
-    }    
+        }               
+    }
 }

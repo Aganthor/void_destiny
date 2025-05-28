@@ -1,4 +1,4 @@
-use bevy::{math::Vec3Swizzles, prelude::*, utils::HashSet};
+use bevy::{math::Vec3Swizzles, prelude::*, platform::collections::HashSet};
 use bevy_ecs_tilemap::prelude::*;
 use bevy_ecs_tilemap::helpers::*;
 
@@ -69,7 +69,7 @@ fn spawn_chunk(commands: &mut Commands, asset_server: &AssetServer, chunk_pos: I
 }
 
 fn startup(mut commands: Commands) {
-    commands.spawn(Camera2dBundle::default());
+    commands.spawn(Camera2d::default());
 }
 
 fn camera_pos_to_chunk_pos(camera_pos: &Vec2) -> IVec2 {
@@ -126,9 +126,9 @@ struct ChunkManager {
 fn camera_movement(
     time: Res<Time>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
-    mut query: Query<(&mut Transform, &mut OrthographicProjection), With<Camera>>,
+    mut query: Query<(&mut Transform, &mut Projection), With<Camera>>,
 ) {
-    for (mut transform, mut ortho) in query.iter_mut() {
+    for (mut transform, mut projection) in query.iter_mut() {
         let mut direction = Vec3::ZERO;
 
         if keyboard_input.pressed(KeyCode::KeyA) {
@@ -146,6 +146,10 @@ fn camera_movement(
         if keyboard_input.pressed(KeyCode::KeyS) {
             direction -= Vec3::new(0.0, 1.0, 0.0);
         }
+
+        let Projection::Orthographic(ortho) = &mut *projection else {
+            continue;
+        };
 
         if keyboard_input.pressed(KeyCode::KeyZ) {
             ortho.scale += 0.1;

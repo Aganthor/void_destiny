@@ -78,9 +78,9 @@ impl Plugin for OverWorldMapPlugin {
 fn camera_movement(
     time: Res<Time>,
     keyboard_input: Res<ButtonInput<KeyCode>>,
-    mut query: Query<(&mut Transform, &mut OrthographicProjection), With<Camera>>,
+    mut query: Query<(&mut Transform, &mut Projection), With<Camera>>,
 ) {
-    for (mut transform, mut ortho) in query.iter_mut() {
+    for (mut transform, mut projection) in query.iter_mut() {
         let mut direction = Vec3::ZERO;
 
         if keyboard_input.pressed(KeyCode::KeyA) {
@@ -98,6 +98,10 @@ fn camera_movement(
         if keyboard_input.pressed(KeyCode::KeyS) {
             direction -= Vec3::new(0.0, 1.0, 0.0);
         }
+
+        let Projection::Orthographic(ortho) = &mut *projection else {
+            continue;
+        };        
 
         if keyboard_input.pressed(KeyCode::KeyZ) {
             ortho.scale += 0.1;
@@ -176,7 +180,7 @@ fn despawn_outofrange_chunks(
                 let x = (chunk_pos.x / (CHUNK_SIZE.x as f32 * TILE_SIZE.x as f32)).floor() as i32;
                 let y = (chunk_pos.y / (CHUNK_SIZE.y as f32 * TILE_SIZE.y as f32)).floor() as i32;
                 chunk_manager.spawned_chunks.remove(&IVec2::new(x, y));
-                commands.entity(entity).despawn_recursive();
+                commands.entity(entity).despawn();
             }
         }
     }
