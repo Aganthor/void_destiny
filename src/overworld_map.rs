@@ -147,12 +147,11 @@ fn spawn_chunk_around_camera(
 ) {
     for transform in camera_query.iter() {
         let camera_chunk_pos = camera_pos_to_chunk_pos(&transform.translation.xy());
-        info!("Camera chunk position: {:?}", camera_chunk_pos);
         for y in (camera_chunk_pos.y - 2)..(camera_chunk_pos.y + 2) {
             for x in (camera_chunk_pos.x - 2)..(camera_chunk_pos.x + 2) {
                 if !chunk_manager.spawned_chunks.contains(&IVec2::new(x, y)) {
                     chunk_manager.spawned_chunks.insert(IVec2::new(x, y));
-                    spawn_chunk(&mut commands, &asset_server, &map_config, IVec2::new(x, y), camera_chunk_pos);
+                    spawn_chunk(&mut commands, &asset_server, &map_config, IVec2::new(x, y));
                 }
             }
         }
@@ -169,11 +168,13 @@ fn despawn_outofrange_chunks(
     chunks_query: Query<(Entity, &Transform)>,
     mut chunk_manager: ResMut<ChunkManager>
 ) {
+    const CHUNK_DESPAWN_DISTANCE: f32 = (CHUNK_SIZE.x as f32 * TILE_SIZE.x) * 3.5;
+
     for camera_transform in camera_query.iter() {
         for (entity, chunk_transform) in chunks_query.iter() {
             let chunk_pos = chunk_transform.translation.xy();
             let distance = camera_transform.translation.xy().distance(chunk_pos);
-            if distance > 320.0 {
+            if distance > CHUNK_DESPAWN_DISTANCE {
                 let x = (chunk_pos.x / (CHUNK_SIZE.x as f32 * TILE_SIZE.x as f32)).floor() as i32;
                 let y = (chunk_pos.y / (CHUNK_SIZE.y as f32 * TILE_SIZE.y as f32)).floor() as i32;
                 chunk_manager.spawned_chunks.remove(&IVec2::new(x, y));
@@ -192,7 +193,6 @@ fn spawn_chunk(
     asset_server: &AssetServer,
     map_config: &OverWorldMapConfig,
     chunk_pos: IVec2,
-    camera_pos: IVec2,
 ) {
     let texture_handle = asset_server.load("tiles/overworld_tiles.png");
     let tilemap_entity = commands.spawn_empty().id();
@@ -203,50 +203,9 @@ fn spawn_chunk(
         .set_lacunarity(map_config.lacunarity as f64);
     let open_simple_moisture = OpenSimplex::new(map_config.moisture_seed as u32);
 
-    let start_col = f32::floor(camera_pos.x as f32 / OVERWORLD_SIZE.x as f32) as u32;
-    let end_col = start_col + RENDER_CHUNK_SIZE.x / OVERWORLD_SIZE.x;
-    let start_row = f32::floor(camera_pos.y as f32 / OVERWORLD_SIZE.y as f32) as u32;
-    let end_row = start_row + RENDER_CHUNK_SIZE.y / OVERWORLD_SIZE.y;
-
-    let offset_x = -camera_pos.x as u32 + start_col * OVERWORLD_SIZE.x;
-    let offset_y = -camera_pos.y as u32 + start_row * OVERWORLD_SIZE.y;
-    info!("Columns: {} to {}, Rows: {} to {}", start_col, end_col, start_row, end_row);
-    info!("Offset X = {}, Offset Y = {}", offset_x, offset_y);
-
-    // for c in start_col..end_col + 1 {
-    //     for r in start_row..end_row + 1 {
-    //         let x = (c - start_col) * OVERWORLD_SIZE.x + offset_x;
-    //         let y = (r - start_row) * OVERWORLD_SIZE.y + offset_y;
-    //         let tile_pos = TilePos { x, y };
-    //         let mut elevation_value = fbm.get([x as f64, y as f64]);
-    //         
-    //         elevation_value += 1.0 * fbm.get([1.0 * x as f64, 1.0 * y as f64]);
-    //         elevation_value += 0.5 * fbm.get([2.0 * x as f64, 2.0 * y as f64]);
-    //         elevation_value += 0.25 * fbm.get([4.0 * x as f64, 4.0 * y as f64]);
-    //         elevation_value /= 1.0 + 0.25 + 0.5;
-    //         elevation_value = elevation_value.powf(1.28);
-    //         
-    //         let moisture_value = open_simple_moisture.get([map_config.frequency * x as f64, map_config.frequency * y as f64]);
-    //         let texture_index = biome(elevation_value, moisture_value);
-    //         info!("moisture_value = {}, elevation_value = {}, texture_index = {}", moisture_value, elevation_value, texture_index);
-    // 
-    //         let tile_entity = commands
-    //             .spawn(TileBundle {
-    //                 position: tile_pos,
-    //                 tilemap_id: TilemapId(tilemap_entity),
-    //                 texture_index: TileTextureIndex(texture_index),
-    //                 ..Default::default()
-    //             })
-    //             .id();
-    //         commands.entity(tilemap_entity).add_child(tile_entity);
-    //         tile_storage.set(&tile_pos, tile_entity);
-    //     }
-    // }
     for x in 0..CHUNK_SIZE.x {        
         for y in 0..CHUNK_SIZE.y {            
             let tile_pos = TilePos { x, y };
-            // let nx: f64 = x as f64 / OVERWORLD_SIZE_WIDTH as f64 - 0.5;
-            // let ny: f64 = y as f64 / OVERWORLD_SIZE_HEIGHT as f64 - 0.5;
             let nx: f64 = (chunk_pos.x as f64 * CHUNK_SIZE.x as f64 + x as f64) / OVERWORLD_SIZE_WIDTH as f64 - 0.5;
             let ny: f64 = (chunk_pos.y as f64 * CHUNK_SIZE.y as f64 + y as f64) / OVERWORLD_SIZE_HEIGHT as f64 - 0.5;
             let mut elevation_value = fbm.get([nx, ny]);
@@ -278,10 +237,6 @@ fn spawn_chunk(
         chunk_pos.y as f32 * CHUNK_SIZE.y as f32 * TILE_SIZE.y,
         0.0,
     ));
-
-    // let tile_size = TilemapTileSize { x: 32.0, y: 32.0 };
-    // let grid_size = tile_size.into();
-    // let map_type = TilemapType::default();
 
     commands.entity(tilemap_entity).insert(TilemapBundle {
         grid_size: TILE_SIZE.into(),
