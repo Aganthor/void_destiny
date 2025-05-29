@@ -1,4 +1,3 @@
-use bevy::color::Srgba;
 use bevy::prelude::Color;
 use bevy::math::UVec2;
 

@@ -35,11 +35,11 @@ pub struct OverWorldMapConfig {
 
 impl Default for OverWorldMapConfig {
     fn default() -> Self {
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
 
         OverWorldMapConfig { 
-            elevation_seed: rng.r#gen(),
-            moisture_seed: rng.r#gen(),
+            elevation_seed: rng.random(),
+            moisture_seed: rng.random(),
             magnification: 7.0,
             frequency: 1.12,
             octaves: 5.0,
@@ -65,6 +65,7 @@ impl Plugin for OverWorldMapPlugin {
             .init_resource::<OverWorldMapConfig>()
             .register_type::<OverWorldMapConfig>()
             .insert_resource(ChunkManager::default())
+            .add_plugins(EguiPlugin  { enable_multipass_for_primary_context: true})
             .add_plugins(ResourceInspectorPlugin::<OverWorldMapConfig>::default())
 //            .add_systems(Startup, setup_camera)
             .add_systems(Update, camera_movement)
@@ -349,19 +350,19 @@ fn move_event_listener(
             };
             // Once we have a world position we can transform it into a possible tile position.
             if let Some(tile_pos) =
-                TilePos::from_world_pos(&dest_in_map_pos, map_size, grid_size, map_type)
+                TilePos::from_world_pos(&dest_in_map_pos, map_size, grid_size, &TILE_SIZE, map_type, &TilemapAnchor::None)
             {
                 if let Some(tile_entity) = tile_storage.get(&tile_pos) {
                     {
                         if let Ok(tile_texture) = tile_query.get(tile_entity) {
                             let walkable = tile_walkable(tile_texture.0);
                             if walkable {
-                                move_legal.send(MoveLegal { 
+                                move_legal.write(MoveLegal { 
                                     legal_move: true,
                                     destination: move_event.destination, 
                                 });
                             } else {
-                                move_legal.send(MoveLegal {
+                                move_legal.write(MoveLegal {
                                     //legal_move: false,
                                     legal_move: true,
                                     //destination: None,
@@ -385,7 +386,7 @@ pub fn detect_player_edge(
     player_query: Query<&Transform, With<Player>>,
     tilemap_q: Query<(&TilemapSize, &TilemapGridSize, &TilemapType, &Transform)>,    
 ) {
-    let player = player_query.single();
+    let player = player_query.single().unwrap();
     for (map_size, grid_size, map_type, map_transform) in tilemap_q.iter() {
         // Make sure that the destination is correct relative to the map due to any map transformation.
         let dest_in_map_pos: Vec2 = {
@@ -394,7 +395,7 @@ pub fn detect_player_edge(
             dest_in_map_pos.xy()
         };
         // Once we have a world position we can transform it into a possible tile position.
-        if let Some(tile_pos) = TilePos::from_world_pos(&dest_in_map_pos, map_size, grid_size, map_type) {
+        if let Some(tile_pos) = TilePos::from_world_pos(&dest_in_map_pos, map_size, grid_size, &TILE_SIZE, map_type, &TilemapAnchor::None) {
             if tile_pos.x == 0 || tile_pos.x == OVERWORLD_SIZE_WIDTH - 1 || tile_pos.y == 0 || tile_pos.y == OVERWORLD_SIZE_HEIGHT - 1 {
                 println!("Edge detected...");
             }

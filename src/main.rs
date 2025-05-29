@@ -15,8 +15,6 @@ use bevy::{
     window::PresentMode, render::camera::ClearColorConfig,
 };
 
-use bevy_inspector_egui::quick::WorldInspectorPlugin;
-
 mod constants;
 mod tile_type;
 use constants::*;

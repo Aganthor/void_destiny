@@ -108,7 +108,7 @@ fn try_move_player(
     for mut camera_transform in camera_query.iter_mut() {
         let mut direction = Vec3::ZERO;
 
-        let Ok((mut animation, transform, player)) = player_query.single_mut();
+        let Ok((mut animation, transform, player)) = player_query.single_mut() else { return; };
         let mut player_move_event = MoveEvent {
             origin: Some(transform.translation),
             destination: None,
@@ -243,7 +243,7 @@ fn zoom_map(
     mut query_camera: Query<&mut Projection, With<PlayerCamera>>,
     mut scroll_evr: EventReader<MouseWheel>,
 ) {
-    let mut projection = query_camera.single_mut();
+    let mut projection = query_camera.single_mut().unwrap();
     // Camera zoom controls
     if let Projection::Orthographic(projection2d) = &mut *projection {
         for ev in scroll_evr.read() {
