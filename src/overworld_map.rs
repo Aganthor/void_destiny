@@ -65,8 +65,8 @@ impl Plugin for OverWorldMapPlugin {
             .init_resource::<OverWorldMapConfig>()
             .register_type::<OverWorldMapConfig>()
             .insert_resource(ChunkManager::default())
-            .add_plugins(EguiPlugin  { enable_multipass_for_primary_context: true})
-            .add_plugins(ResourceInspectorPlugin::<OverWorldMapConfig>::default())
+            // .add_plugins(EguiPlugin  { enable_multipass_for_primary_context: true})
+            // .add_plugins(ResourceInspectorPlugin::<OverWorldMapConfig>::default())
 //            .add_systems(Startup, setup_camera)
             .add_systems(Update, camera_movement)
             .add_systems(Update, spawn_chunk_around_camera)
@@ -386,7 +386,10 @@ pub fn detect_player_edge(
     player_query: Query<&Transform, With<Player>>,
     tilemap_q: Query<(&TilemapSize, &TilemapGridSize, &TilemapType, &Transform)>,    
 ) {
-    let player = player_query.single().unwrap();
+    let player = match player_query.single() {
+        Ok(player) => player,
+        Err(_) => return, // No player found
+    };
     for (map_size, grid_size, map_type, map_transform) in tilemap_q.iter() {
         // Make sure that the destination is correct relative to the map due to any map transformation.
         let dest_in_map_pos: Vec2 = {
@@ -394,21 +397,11 @@ pub fn detect_player_edge(
             let dest_in_map_pos = map_transform.compute_matrix().inverse() * destination_pos;
             dest_in_map_pos.xy()
         };
-        // Once we have a world position we can transform it into a possible tile position.
+        // Once we have a world position, we can transform it into a possible tile position.
         if let Some(tile_pos) = TilePos::from_world_pos(&dest_in_map_pos, map_size, grid_size, &TILE_SIZE, map_type, &TilemapAnchor::None) {
             if tile_pos.x == 0 || tile_pos.x == OVERWORLD_SIZE_WIDTH - 1 || tile_pos.y == 0 || tile_pos.y == OVERWORLD_SIZE_HEIGHT - 1 {
                 println!("Edge detected...");
             }
         }
-    }
-}
-
-fn change_x_offset(
-    keyboard_input: Res<ButtonInput<KeyCode>>,
-    mut map_config: ResMut<OverWorldMapConfig>,
-) {
-    if keyboard_input.just_pressed(KeyCode::KeyL) {
-        map_config.offset_x += 1;
-        println!("New x_offset = {}", map_config.offset_x);
     }
 }
