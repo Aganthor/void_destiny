@@ -5,19 +5,15 @@ use rand::prelude::*;
 use noise::{NoiseFn, OpenSimplex, Fbm, MultiFractal};
 use std::collections::HashSet;
 use bevy_inspector_egui::prelude::*;
-use bevy_inspector_egui::quick::ResourceInspectorPlugin;
+//use bevy_inspector_egui::quick::ResourceInspectorPlugin;
 
 use crate::{constants::*, player::Player};
 use crate::events::{MoveEvent, MoveLegal};
 use crate::{tile_type::*, PlayerCamera};
 
-// #[derive(Component, Inspectable)]
-// pub struct TileCollider;
-
 const TILE_SIZE: TilemapTileSize = TilemapTileSize { x: 32.0, y: 32.0 };
 
 
-//#[derive(Resource, Inspectable)]
 #[derive(Reflect, Resource, InspectorOptions)]
 #[reflect(Resource, InspectorOptions)]
 pub struct OverWorldMapConfig {
@@ -67,8 +63,6 @@ impl Plugin for OverWorldMapPlugin {
             .insert_resource(ChunkManager::default())
             // .add_plugins(EguiPlugin  { enable_multipass_for_primary_context: true})
             // .add_plugins(ResourceInspectorPlugin::<OverWorldMapConfig>::default())
-//            .add_systems(Startup, setup_camera)
-            .add_systems(Update, camera_movement)
             .add_systems(Update, spawn_chunk_around_camera)
             .add_systems(Update, despawn_outofrange_chunks)
             .add_systems(Update, detect_player_edge)
@@ -123,16 +117,6 @@ fn camera_movement(
         transform.translation.z = z;
     }    
 }
-
-// fn setup_camera(mut commands: Commands) {
-//     commands.spawn(Camera2dBundle {
-//         camera: Camera { 
-//             clear_color: ClearColorConfig::Custom(BG_COLOR),
-//             ..Default::default()
-//         },
-//         ..Default::default()
-//     });
-// }
 
 fn camera_pos_to_chunk_pos(camera_pos: &Vec2) -> IVec2 {
     let camera_pos = camera_pos.as_ivec2();

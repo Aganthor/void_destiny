@@ -12,7 +12,7 @@
 
 use bevy::{
     prelude::*,
-    window::PresentMode, render::camera::ClearColorConfig,
+    window::PresentMode,
 };
 
 mod constants;
@@ -25,14 +25,14 @@ use player::*;
 mod overworld_map;
 use overworld_map::*;
 
-mod worldgen;
-use worldgen::*;
+// mod worldgen;
+// use worldgen::*;
 
 mod events;
 use events::*;
 
-mod debug_plugin;
-use debug_plugin::*;
+// mod debug_plugin;
+// use debug_plugin::*;
 
 fn main() {
     App::new()

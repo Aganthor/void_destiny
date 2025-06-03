@@ -1,21 +1,15 @@
 use bevy::{
     input::{keyboard::KeyCode, ButtonInput},
     prelude::*,
-    render::camera::*,
 };
 use bevy::input::mouse::{MouseWheel, MouseScrollUnit};
-
-use benimator::*;
-//use bevy_inspector_egui::Inspectable;
+use bevy_spritesheet_animation::prelude::*;
 
 use crate::events::{
     MoveEvent,
     MoveLegal
 };
 
-use crate::constants::{BG_COLOR};
-
-const ANIMATION_DURATION: f64 = 8.0;
 const MOVE_SPEED: f32 = 3.0;
 const PLAYER_TILE_SIZE: f32 = 32.0;
 
@@ -35,36 +29,7 @@ pub struct Player {
     size: f32,
 }
 
-#[derive(Component, Deref, Debug)]
-struct PlayerAnimation(benimator::Animation);
 
-#[derive(Default, Component, Deref, DerefMut)]
-struct PlayerAnimationState(benimator::State);
-
-#[derive(Resource)]
-struct DirectionAnimations {
-    up: benimator::Animation,
-    down: benimator::Animation,
-    left: benimator::Animation,
-    right: benimator::Animation,
-}
-
-impl Default for DirectionAnimations {
-    fn default() -> Self {
-        DirectionAnimations {
-            up: Animation::from_indices(9..=11, FrameRate::from_fps(ANIMATION_DURATION)),
-            down: Animation::from_indices(0..=2, FrameRate::from_fps(ANIMATION_DURATION)),
-            left: Animation::from_indices(3..=5, FrameRate::from_fps(ANIMATION_DURATION)),
-            right: Animation::from_indices(6..=8, FrameRate::from_fps(ANIMATION_DURATION)),
-        }
-    }
-}
-
-// #[derive(Component, Clone, Copy, PartialEq, Eq)]
-// struct Position {
-//     x: i32,
-//     y: i32,
-// }
 #[derive(Component)]
 pub struct PlayerCamera;
 
@@ -73,42 +38,26 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<DirectionAnimations>()
-            .add_systems(Startup, setup)
-            .add_systems(Startup, setup_camera)
+            app.add_plugins(SpritesheetAnimationPlugin::default())
+                .add_systems(Startup, spawn_caracter)
             .add_systems(PreUpdate, try_move_player)
             .add_systems(Update, move_player)
             .add_systems(Update, zoom_map);
-//            .add_systems(PostUpdate, animate_player);
     }
 }
 
-// fn animate_player(
-//     time: Res<Time>,
-//     mut animation_query: Query<(
-//         &PlayerAnimation,
-//         &mut PlayerAnimationState,
-//         &mut TextureAtlas,
-//     )>,
-// ) {
-//     for (animation, mut animation_state, mut texture_atlas) in animation_query.iter_mut() {
-//         animation_state.update(animation, time.delta());
-//         texture_atlas.index = animation_state.frame_index();
-//     }
-// }
-
 fn try_move_player(
-    keyboard_input: Res<ButtonInput<KeyCode>>,
-    animations: Res<DirectionAnimations>,
+    keyboard: Res<ButtonInput<KeyCode>>,
+    library: Res<AnimationLibrary>,
     time: Res<Time>,
-    mut player_query: Query<(&mut PlayerAnimation, &mut Transform, &Player), Without<PlayerCamera>>,
+    mut player_query: Query<(&mut Sprite, &mut SpritesheetAnimation, &Transform, &Player), Without<PlayerCamera>>,
     mut camera_query: Query<&mut Transform, With<PlayerCamera>>,
     mut move_event: EventWriter<MoveEvent>,
 ) {
     for mut camera_transform in camera_query.iter_mut() {
         let mut direction = Vec3::ZERO;
 
-        let Ok((mut animation, transform, player)) = player_query.single_mut() else { return; };
+        let Ok((mut _sprite, mut animation, transform, player)) = player_query.single_mut() else { return; };
         let mut player_move_event = MoveEvent {
             origin: Some(transform.translation),
             destination: None,
@@ -116,36 +65,51 @@ fn try_move_player(
         let mut send_event = false;
         let mut destination = transform.translation;
     
-        if keyboard_input.pressed(KeyCode::KeyA) {
-            *animation = PlayerAnimation(animations.left.clone());
+        if keyboard.pressed(KeyCode::KeyA) {
+            if let Some(run_animation_id) = library.animation_with_name("run_left") {
+                if animation.animation_id != run_animation_id {
+                    animation.switch(run_animation_id);
+                }
+            }
             destination.x -=  player.speed * player.size * time.delta_secs();
             send_event = true;
             direction -= Vec3::new(1.0, 0.0, 0.0);
-        } else if keyboard_input.pressed(KeyCode::KeyD) {
-            *animation = PlayerAnimation(animations.right.clone());
+        } else if keyboard.pressed(KeyCode::KeyD) {
+            if let Some(run_animation_id) = library.animation_with_name("run_right") {
+                if animation.animation_id != run_animation_id {
+                    animation.switch(run_animation_id);
+                }
+            }
             destination.x +=  player.speed * player.size * time.delta_secs();
             send_event = true;
             direction += Vec3::new(1.0, 0.0, 0.0);
-        } else if keyboard_input.pressed(KeyCode::KeyS) {
-            *animation = PlayerAnimation(animations.down.clone());
+        } else if keyboard.pressed(KeyCode::KeyS) {
+            if let Some(run_animation_id) = library.animation_with_name("run_down") {
+                if animation.animation_id != run_animation_id {
+                    animation.switch(run_animation_id);
+                }
+            }
             destination.y -=  player.speed * player.size * time.delta_secs();
             send_event = true;
             direction -= Vec3::new(0.0, 1.0, 0.0);
-        } else if keyboard_input.pressed(KeyCode::KeyW) {
-            *animation = PlayerAnimation(animations.up.clone());
+        } else if keyboard.pressed(KeyCode::KeyW) {
+            if let Some(run_animation_id) = library.animation_with_name("run_up") {
+                if animation.animation_id != run_animation_id {
+                    animation.switch(run_animation_id);
+                }
+            }
             destination.y +=  player.speed * player.size * time.delta_secs();
             send_event = true;
             direction += Vec3::new(0.0, 1.0, 0.0);
         }
-        if keyboard_input.any_just_released([KeyCode::KeyA, KeyCode::KeyS, KeyCode::KeyD, KeyCode::KeyW]) {
+        if keyboard.any_just_released([KeyCode::KeyA, KeyCode::KeyS, KeyCode::KeyD, KeyCode::KeyW]) {
             send_event = false;
             //info!("Need to create an idle animation!");
-            //*animation = PlayerAnimation(animations.idle.clone());
         }
     
         if !send_event {
             player_move_event.destination = Some(destination);
-            move_event.send(player_move_event);
+            move_event.write(player_move_event);
         }
 
         let z = camera_transform.translation.z;
@@ -154,69 +118,63 @@ fn try_move_player(
     }
 }
 
-fn setup(
+fn spawn_caracter(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
-    direction_animations: Res<DirectionAnimations>,
+    mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
+    mut library: ResMut<AnimationLibrary>,
 ) {
-    let texture: Handle<Image> = asset_server.load("Male 01-1.png");
-    let layout= TextureAtlasLayout::from_grid( UVec2::new(32, 32), 3, 4, None, None);
-    let texture_atlas_layout = texture_atlas_layouts.add(layout);
-    
     let player_position = Transform::from_translation(Vec3::Z * 10.0) * Transform::from_scale(Vec3::splat(1.0));
 
-    commands
-        .spawn(
-            Sprite {
-                image: texture,
-                texture_atlas: Some(TextureAtlas {
-                    layout: texture_atlas_layout,
-                    index: 1,
-                }),
-                ..default()})
-        .insert(PlayerAnimation(direction_animations.left.clone()))
-        .insert(PlayerAnimationState::default())
-        .insert(Direction::Left)
-        .insert(Player {
-            speed: MOVE_SPEED,
-            size: PLAYER_TILE_SIZE
-        });
+    commands.spawn((Camera2d::default(), PlayerCamera));
+    
+    let spritesheet = Spritesheet::new(3, 4);
 
+    // Move right
+    let run_right_clip = Clip::from_frames(spritesheet.row(2));
+    let run_right_clip_id = library.register_clip(run_right_clip);
+    let run_animation_right = Animation::from_clip(run_right_clip_id);
+    let run_animation_right_id = library.register_animation(run_animation_right);
+    library.name_animation(run_animation_right_id, "run_right").unwrap();
 
-        // 
-        // .spawn(SpriteBundle {
-        //     texture,
-        //     atlas: TextureAtlas {
-        //         layout: texture_atlas_layout,
-        //         index: 1
-        //     },
-        //     transform: player_position,
-        //     ..default()
-        // })
-        // .insert(PlayerAnimation(direction_animations.left.clone()))
-        // .insert(PlayerAnimationState::default())
-        // .insert(Direction::Left)
-        // .insert(Player {
-        //     speed: MOVE_SPEED,
-        //     size: PLAYER_TILE_SIZE
-        // });
-}
+    // Move left
+    let run_left_clip = Clip::from_frames(spritesheet.row(1));
+    let run_left_clip_id = library.register_clip(run_left_clip);
+    let run_animation_left = Animation::from_clip(run_left_clip_id);
+    let run_animation_left_id = library.register_animation(run_animation_left);
+    library.name_animation(run_animation_left_id, "run_left").unwrap();
 
-fn setup_camera(mut commands: Commands) {
-    commands.spawn(
-        (Camera2d::default(), PlayerCamera)
-        
+    // Move up
+    let run_up_clip = Clip::from_frames(spritesheet.row(3));
+    let run_up_clip_id = library.register_clip(run_up_clip);
+    let run_animation_up = Animation::from_clip(run_up_clip_id);
+    let run_animation_up_id = library.register_animation(run_animation_up);
+    library.name_animation(run_animation_up_id, "run_up").unwrap();
+
+    // Move down
+    let run_down_clip = Clip::from_frames(spritesheet.row(0));
+    let run_down_clip_id = library.register_clip(run_down_clip);
+    let run_animation_down = Animation::from_clip(run_down_clip_id);
+    let run_animation_down_id = library.register_animation(run_animation_down);
+    library.name_animation(run_animation_down_id, "run_down").unwrap();
+
+    // Spawn the player sprite with the animations
+    let image = asset_server.load("Male 01-1.png");
+
+    let atlas = TextureAtlas {
+        layout: atlas_layouts.add(Spritesheet::new(3,4).atlas_layout(32, 32)),
+        ..default()
+    };
+
+    let mut player = commands.spawn((
+        Sprite::from_atlas_image(image, atlas),
+        SpritesheetAnimation::from_id(run_animation_down_id),
+        )
     );
-
-    // commands.spawn(Camera2d {
-    //     camera: Camera { 
-    //         clear_color: ClearColorConfig::Custom(BG_COLOR),
-    //         ..Default::default()
-    //     },
-    //     ..Default::default()
-    // })
-    // .insert(PlayerCamera);
+    player.insert(Player {
+        speed: MOVE_SPEED,
+        size: PLAYER_TILE_SIZE,
+    });
 }
 
 fn move_player(

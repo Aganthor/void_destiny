@@ -13,10 +13,9 @@ debug = 2
 opt-level = 3
 
 [dependencies]
-# https://github.com/merwaaan/bevy_spritesheet_animation
 bevy = "0.16.0"
-benimator = "4.1.3"
 bevy_ecs_tilemap = { version = "0.16.0" }
 rand = "0.9.1"
 bevy-inspector-egui = "0.31.0"
 noise = "0.9.0"
+bevy_spritesheet_animation = "3.0.0"
