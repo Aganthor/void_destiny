@@ -65,7 +65,7 @@ impl Plugin for OverWorldMapPlugin {
             // .add_plugins(ResourceInspectorPlugin::<OverWorldMapConfig>::default())
             .add_systems(Update, spawn_chunk_around_camera)
             .add_systems(Update, despawn_outofrange_chunks)
-            .add_systems(Update, detect_player_edge)
+            .add_systems(Update, camera_movement)
             .add_systems(Update, move_event_listener);
     }
 }
@@ -346,46 +346,48 @@ fn move_event_listener(
                                     destination: move_event.destination, 
                                 });
                             } else {
+                                // move_legal.write(MoveLegal {
+                                //     legal_move: false,
+                                //     destination: None,
+                                //  });
                                 move_legal.write(MoveLegal {
-                                    //legal_move: false,
                                     legal_move: true,
-                                    //destination: None,
                                     destination: move_event.destination,
-                                 });
+                                });
                             }
                         }
                     }
                 }
 
                 // Is the player about to move to the edge?
-                if tile_pos.x == 0 || tile_pos.x == OVERWORLD_SIZE_WIDTH - 1 || tile_pos.y == 0 || tile_pos.y == OVERWORLD_SIZE_HEIGHT - 1 {
-                    println!("Edge detected...");
-                }
+                // if tile_pos.x == 0 || tile_pos.x == OVERWORLD_SIZE_WIDTH - 1 || tile_pos.y == 0 || tile_pos.y == OVERWORLD_SIZE_HEIGHT - 1 {
+                //     println!("Edge detected...");
+                // }
             }
         }
     }
 }
 
-pub fn detect_player_edge(
-    player_query: Query<&Transform, With<Player>>,
-    tilemap_q: Query<(&TilemapSize, &TilemapGridSize, &TilemapType, &Transform)>,    
-) {
-    let player = match player_query.single() {
-        Ok(player) => player,
-        Err(_) => return, // No player found
-    };
-    for (map_size, grid_size, map_type, map_transform) in tilemap_q.iter() {
-        // Make sure that the destination is correct relative to the map due to any map transformation.
-        let dest_in_map_pos: Vec2 = {
-            let destination_pos = Vec4::from((player.translation, 1.0));
-            let dest_in_map_pos = map_transform.compute_matrix().inverse() * destination_pos;
-            dest_in_map_pos.xy()
-        };
-        // Once we have a world position, we can transform it into a possible tile position.
-        if let Some(tile_pos) = TilePos::from_world_pos(&dest_in_map_pos, map_size, grid_size, &TILE_SIZE, map_type, &TilemapAnchor::None) {
-            if tile_pos.x == 0 || tile_pos.x == OVERWORLD_SIZE_WIDTH - 1 || tile_pos.y == 0 || tile_pos.y == OVERWORLD_SIZE_HEIGHT - 1 {
-                println!("Edge detected...");
-            }
-        }
-    }
-}
+// pub fn detect_player_edge(
+//     player_query: Query<&Transform, With<Player>>,
+//     tilemap_q: Query<(&TilemapSize, &TilemapGridSize, &TilemapType, &Transform)>,    
+// ) {
+//     let player = match player_query.single() {
+//         Ok(player) => player,
+//         Err(_) => return, // No player found
+//     };
+//     for (map_size, grid_size, map_type, map_transform) in tilemap_q.iter() {
+//         // Make sure that the destination is correct relative to the map due to any map transformation.
+//         let dest_in_map_pos: Vec2 = {
+//             let destination_pos = Vec4::from((player.translation, 1.0));
+//             let dest_in_map_pos = map_transform.compute_matrix().inverse() * destination_pos;
+//             dest_in_map_pos.xy()
+//         };
+//         // Once we have a world position, we can transform it into a possible tile position.
+//         if let Some(tile_pos) = TilePos::from_world_pos(&dest_in_map_pos, map_size, grid_size, &TILE_SIZE, map_type, &TilemapAnchor::None) {
+//             if tile_pos.x == 0 || tile_pos.x == OVERWORLD_SIZE_WIDTH - 1 || tile_pos.y == 0 || tile_pos.y == OVERWORLD_SIZE_HEIGHT - 1 {
+//                 println!("Edge detected...");
+//             }
+//         }
+//     }
+// }

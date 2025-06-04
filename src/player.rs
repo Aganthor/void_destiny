@@ -38,10 +38,10 @@ pub struct PlayerPlugin;
 
 impl Plugin for PlayerPlugin {
     fn build(&self, app: &mut App) {
-            app.add_plugins(SpritesheetAnimationPlugin::default())
-                .add_systems(Startup, spawn_caracter)
+        app.add_plugins(SpritesheetAnimationPlugin::default())
+            .add_systems(Startup, spawn_caracter)
             .add_systems(PreUpdate, try_move_player)
-            .add_systems(Update, move_player)
+            //.add_systems(Update, (move_player, update_camera).chain())
             .add_systems(Update, zoom_map);
     }
 }
@@ -50,72 +50,80 @@ fn try_move_player(
     keyboard: Res<ButtonInput<KeyCode>>,
     library: Res<AnimationLibrary>,
     time: Res<Time>,
-    mut player_query: Query<(&mut Sprite, &mut SpritesheetAnimation, &Transform, &Player), Without<PlayerCamera>>,
-    mut camera_query: Query<&mut Transform, With<PlayerCamera>>,
+    mut player_query: Query<(&mut Sprite, &mut SpritesheetAnimation, &Transform, &Player)>,
     mut move_event: EventWriter<MoveEvent>,
 ) {
-    for mut camera_transform in camera_query.iter_mut() {
-        let mut direction = Vec3::ZERO;
-
-        let Ok((mut _sprite, mut animation, transform, player)) = player_query.single_mut() else { return; };
-        let mut player_move_event = MoveEvent {
-            origin: Some(transform.translation),
-            destination: None,
-        };
-        let mut send_event = false;
-        let mut destination = transform.translation;
+    let mut direction = Vec3::ZERO;
+    let Ok((mut _sprite, mut animation, player_transform, player)) = player_query.single_mut() else { return; };
+    let mut player_move_event = MoveEvent {
+        origin: Some(player_transform.translation),
+        destination: None,
+    };
+    let mut send_event = false;
+    let mut destination = player_transform.translation;
     
-        if keyboard.pressed(KeyCode::KeyA) {
-            if let Some(run_animation_id) = library.animation_with_name("run_left") {
-                if animation.animation_id != run_animation_id {
-                    animation.switch(run_animation_id);
-                }
+    if keyboard.pressed(KeyCode::KeyA) {
+        if let Some(run_animation_id) = library.animation_with_name("run_left") {
+            if animation.animation_id != run_animation_id {
+                animation.switch(run_animation_id);
             }
-            destination.x -=  player.speed * player.size * time.delta_secs();
-            send_event = true;
-            direction -= Vec3::new(1.0, 0.0, 0.0);
-        } else if keyboard.pressed(KeyCode::KeyD) {
-            if let Some(run_animation_id) = library.animation_with_name("run_right") {
-                if animation.animation_id != run_animation_id {
-                    animation.switch(run_animation_id);
-                }
-            }
-            destination.x +=  player.speed * player.size * time.delta_secs();
-            send_event = true;
-            direction += Vec3::new(1.0, 0.0, 0.0);
-        } else if keyboard.pressed(KeyCode::KeyS) {
-            if let Some(run_animation_id) = library.animation_with_name("run_down") {
-                if animation.animation_id != run_animation_id {
-                    animation.switch(run_animation_id);
-                }
-            }
-            destination.y -=  player.speed * player.size * time.delta_secs();
-            send_event = true;
-            direction -= Vec3::new(0.0, 1.0, 0.0);
-        } else if keyboard.pressed(KeyCode::KeyW) {
-            if let Some(run_animation_id) = library.animation_with_name("run_up") {
-                if animation.animation_id != run_animation_id {
-                    animation.switch(run_animation_id);
-                }
-            }
-            destination.y +=  player.speed * player.size * time.delta_secs();
-            send_event = true;
-            direction += Vec3::new(0.0, 1.0, 0.0);
         }
-        if keyboard.any_just_released([KeyCode::KeyA, KeyCode::KeyS, KeyCode::KeyD, KeyCode::KeyW]) {
-            send_event = false;
-            //info!("Need to create an idle animation!");
+        destination.x -=  player.speed * player.size * time.delta_secs();
+        send_event = true;
+        direction -= Vec3::new(1.0, 0.0, 0.0);
+    } else if keyboard.pressed(KeyCode::KeyD) {
+        if let Some(run_animation_id) = library.animation_with_name("run_right") {
+            if animation.animation_id != run_animation_id {
+                animation.switch(run_animation_id);
+            }
         }
-    
-        if !send_event {
-            player_move_event.destination = Some(destination);
-            move_event.write(player_move_event);
+        destination.x +=  player.speed * player.size * time.delta_secs();
+        send_event = true;
+        direction += Vec3::new(1.0, 0.0, 0.0);
+    } else if keyboard.pressed(KeyCode::KeyS) {
+        if let Some(run_animation_id) = library.animation_with_name("run_down") {
+            if animation.animation_id != run_animation_id {
+                animation.switch(run_animation_id);
+            }
         }
-
-        let z = camera_transform.translation.z;
-        camera_transform.translation += time.delta_secs() * direction * 500.;
-        camera_transform.translation.z = z;
+        destination.y -=  player.speed * player.size * time.delta_secs();
+        send_event = true;
+        direction -= Vec3::new(0.0, 1.0, 0.0);
+    } else if keyboard.pressed(KeyCode::KeyW) {
+        if let Some(run_animation_id) = library.animation_with_name("run_up") {
+            if animation.animation_id != run_animation_id {
+                animation.switch(run_animation_id);
+            }
+        }
+        destination.y +=  player.speed * player.size * time.delta_secs();
+        send_event = true;
+        direction += Vec3::new(0.0, 1.0, 0.0);
     }
+    if keyboard.any_just_released([KeyCode::KeyA, KeyCode::KeyS, KeyCode::KeyD, KeyCode::KeyW]) {
+        send_event = false;
+        // Need to create an idle animation!
+    }
+
+    if send_event {
+        player_move_event.destination = Some(destination);
+        move_event.write(player_move_event);
+    }
+}
+
+fn update_camera(
+    mut camera: Single<&mut Transform, (With<Camera2d>, Without<Player>)>,
+    player: Single<&Transform, (With<Player>, Without<Camera2d>)>,
+    time: Res<Time>,
+) {
+    let Vec3 { x, y, .. } = player.translation;
+    let direction = Vec3::new(x, y, camera.translation.z);
+
+    // Applies a smooth effect to camera movement using stable interpolation
+    // between the camera position and the player position on the x and y axes.
+    const CAMERA_DECAY_RATE: f32 = 2.; // Adjust this value to control the smoothness
+    camera
+        .translation
+        .smooth_nudge(&direction, CAMERA_DECAY_RATE, time.delta_secs());
 }
 
 fn spawn_caracter(
@@ -186,6 +194,7 @@ fn move_player(
             return;
         }
         if event.legal_move {
+            //info!("Moving player to {:?}", event.destination);
             for mut transform in q.iter_mut() {
                 transform.translation = Vec3::new(
                     event.destination.unwrap().x, 
