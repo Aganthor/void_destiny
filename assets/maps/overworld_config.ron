@@ -1,0 +1,10 @@
+OverWorldConfig(
+    magnification: 7.0,
+    frequency: 1.12,
+    octaves: 5.0,
+    lacunarity: 0.7,
+    gain: 0.5,
+    amplitude: 0.5,
+    offset_x: 0,
+    offset_y: 0,
+)
