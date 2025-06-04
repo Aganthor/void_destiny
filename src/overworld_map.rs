@@ -4,8 +4,9 @@ use bevy_ecs_tilemap::helpers;
 use rand::prelude::*;
 use noise::{NoiseFn, OpenSimplex, Fbm, MultiFractal};
 use std::collections::HashSet;
+use bevy::window::PrimaryWindow;
 use bevy_inspector_egui::{bevy_egui::EguiPlugin, prelude::*, quick::ResourceInspectorPlugin};
-
+use bevy_inspector_egui::bevy_egui::{EguiContext, EguiContextPass};
 use crate::{constants::*, player::Player};
 use crate::events::{MoveEvent, MoveLegal};
 use crate::{tile_type::*, PlayerCamera};
@@ -13,7 +14,7 @@ use crate::{tile_type::*, PlayerCamera};
 const TILE_SIZE: TilemapTileSize = TilemapTileSize { x: 32.0, y: 32.0 };
 
 
-#[derive(Reflect, Resource, InspectorOptions)]
+#[derive(Reflect, Resource, InspectorOptions, Debug, Clone)]
 #[reflect(Resource, InspectorOptions)]
 pub struct OverWorldMapConfig {
     elevation_seed: i32,
@@ -65,7 +66,26 @@ impl Plugin for OverWorldMapPlugin {
             .add_systems(Update, spawn_chunk_around_camera)
             .add_systems(Update, despawn_outofrange_chunks)
             .add_systems(Update, camera_movement)
+            .add_systems(Update, overworld_map_config_change)
             .add_systems(Update, move_event_listener);
+    }
+}
+
+///
+/// This function resets the map by despawning all chunks and then spawning new ones when 
+/// the overworld map config changes.
+/// 
+fn overworld_map_config_change(
+    mut commands: Commands,
+    chunks_query: Query<(Entity, &Transform)>,
+    map_config: Res<OverWorldMapConfig>,
+    mut chunk_manager: ResMut<ChunkManager>,
+){
+    if map_config.is_changed() && !map_config.is_added() {
+        println!("Overworld Map Config changed: {:?}", map_config);
+        for (entity, transform) in chunks_query.iter() {
+            commands.entity(entity).despawn();
+        }
     }
 }
 
