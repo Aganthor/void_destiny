@@ -4,8 +4,7 @@ use bevy_ecs_tilemap::helpers;
 use rand::prelude::*;
 use noise::{NoiseFn, OpenSimplex, Fbm, MultiFractal};
 use std::collections::HashSet;
-use bevy_inspector_egui::prelude::*;
-//use bevy_inspector_egui::quick::ResourceInspectorPlugin;
+use bevy_inspector_egui::{bevy_egui::EguiPlugin, prelude::*, quick::ResourceInspectorPlugin};
 
 use crate::{constants::*, player::Player};
 use crate::events::{MoveEvent, MoveLegal};
@@ -61,8 +60,8 @@ impl Plugin for OverWorldMapPlugin {
             .init_resource::<OverWorldMapConfig>()
             .register_type::<OverWorldMapConfig>()
             .insert_resource(ChunkManager::default())
-            // .add_plugins(EguiPlugin  { enable_multipass_for_primary_context: true})
-            // .add_plugins(ResourceInspectorPlugin::<OverWorldMapConfig>::default())
+            .add_plugins(EguiPlugin  { enable_multipass_for_primary_context: true})
+            .add_plugins(ResourceInspectorPlugin::<OverWorldMapConfig>::default())
             .add_systems(Update, spawn_chunk_around_camera)
             .add_systems(Update, despawn_outofrange_chunks)
             .add_systems(Update, camera_movement)
@@ -244,11 +243,6 @@ fn spawn_chunk(
 /// Simple function to determine the biome depending on elevation and moisture.
 /// 
 fn biome(elevation: f64, moisture: f64) -> u32 {
-    // if elevation < 0.11 {
-    //     TileType::DeepWater as u32
-    // } else {
-    //     TileType::Grass as u32
-    // }
     if elevation < 0.1 {
         return TileType::DeepWater as u32;
     } else if elevation < 0.12 {
@@ -256,13 +250,13 @@ fn biome(elevation: f64, moisture: f64) -> u32 {
     }
 
     if elevation > 0.8 {
-        if moisture < 0.33 {
+        if moisture < 0.1 {
             return TileType::Dirt as u32;
         } // scorched
-        if moisture < 0.66 {
+        if moisture < 0.2 {
             return TileType::Sand as u32;
         } // bare
-        if moisture < 0.1 {
+        if moisture < 0.5 {
             return TileType::Savannah as u32;
         } //tundra
         return TileType::Snow as u32;
@@ -272,7 +266,7 @@ fn biome(elevation: f64, moisture: f64) -> u32 {
         if moisture < 0.1 {
             return TileType::Dirt as u32;
         } // temperate_desert
-        if moisture < 0.1 {
+        if moisture < 0.33 {
             return TileType::Sand as u32;
         } // shrubland
         return TileType::Savannah as u32; // Taiga
@@ -370,7 +364,7 @@ fn move_event_listener(
 
 // pub fn detect_player_edge(
 //     player_query: Query<&Transform, With<Player>>,
-//     tilemap_q: Query<(&TilemapSize, &TilemapGridSize, &TilemapType, &Transform)>,    
+//     tilemap_q: Query<(&TilemapSize, &TilemapGridSize, &TilemapType, &Transform)>,
 // ) {
 //     let player = match player_query.single() {
 //         Ok(player) => player,
