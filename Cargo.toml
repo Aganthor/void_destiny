@@ -19,3 +19,4 @@ rand = "0.9.1"
 bevy-inspector-egui = "0.31.0"
 noise = "0.9.0"
 bevy_spritesheet_animation = "3.0.0"
+# Check leafwing input manager for input handling
