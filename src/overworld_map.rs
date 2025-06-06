@@ -7,9 +7,12 @@ use std::collections::HashSet;
 use bevy::window::PrimaryWindow;
 use bevy_inspector_egui::{bevy_egui::EguiPlugin, prelude::*, quick::ResourceInspectorPlugin};
 use bevy_inspector_egui::bevy_egui::{EguiContext, EguiContextPass};
+
 use crate::{constants::*, player::Player};
 use crate::events::{MoveEvent, MoveLegal};
 use crate::{tile_type::*, PlayerCamera};
+use crate::states::GameState;
+
 
 const TILE_SIZE: TilemapTileSize = TilemapTileSize { x: 32.0, y: 32.0 };
 
@@ -67,26 +70,36 @@ impl Plugin for OverWorldMapPlugin {
             .add_systems(Update, despawn_outofrange_chunks)
             .add_systems(Update, camera_movement)
             .add_systems(Update, overworld_map_config_change)
+            .add_systems(Update, reset_map.run_if(in_state(GameState::DirtyMap)))
             .add_systems(Update, move_event_listener);
     }
 }
 
 ///
-/// This function resets the map by despawning all chunks and then spawning new ones when 
-/// the overworld map config changes.
+/// This function will change the game state to DirtyMap when the OverWorldMapConfig changes.
 /// 
 fn overworld_map_config_change(
-    mut commands: Commands,
-    chunks_query: Query<(Entity, &Transform)>,
     map_config: Res<OverWorldMapConfig>,
-    mut chunk_manager: ResMut<ChunkManager>,
+    mut next_state: ResMut<NextState<GameState>>,
 ){
     if map_config.is_changed() && !map_config.is_added() {
         println!("Overworld Map Config changed: {:?}", map_config);
-        for (entity, transform) in chunks_query.iter() {
-            commands.entity(entity).despawn();
-        }
+        next_state.set(GameState::DirtyMap);      
     }
+}
+
+fn reset_map(
+    mut commands: Commands,
+    chunks_query: Query<(Entity, &Transform)>,
+    mut chunk_manager: ResMut<ChunkManager>,
+    mut next_state: ResMut<NextState<GameState>>,
+) {
+    for (entity, _transform) in chunks_query.iter() {
+        commands.entity(entity).despawn();
+    }
+    chunk_manager.spawned_chunks.clear();
+    next_state.set(GameState::GameRunning);
+    println!("Map reset.");
 }
 
 fn camera_movement(

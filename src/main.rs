@@ -29,6 +29,9 @@ use overworld_map::*;
 // use worldgen::*;
 
 mod events;
+mod states;
+use states::*;
+
 use events::*;
 
 // mod debug_plugin;
@@ -49,6 +52,7 @@ fn main() {
         })
         .set(ImagePlugin::default_nearest()),
         )
+        .init_state::<GameState>()
         //.add_plugin(DebugPlugin)
         .add_plugins(PlayerPlugin)
         .add_plugins(OverWorldMapPlugin)

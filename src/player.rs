@@ -1,6 +1,7 @@
 use bevy::{
     input::{keyboard::KeyCode, ButtonInput},
     prelude::*,
+    state::prelude::*,
 };
 use bevy::input::mouse::{MouseWheel, MouseScrollUnit};
 use bevy_spritesheet_animation::prelude::*;
@@ -9,6 +10,8 @@ use crate::events::{
     MoveEvent,
     MoveLegal
 };
+
+use crate::states::GameState;
 
 const MOVE_SPEED: f32 = 3.0;
 const PLAYER_TILE_SIZE: f32 = 32.0;
@@ -42,7 +45,7 @@ impl Plugin for PlayerPlugin {
             .add_systems(Startup, spawn_caracter)
             .add_systems(PreUpdate, try_move_player)
             //.add_systems(Update, (move_player, update_camera).chain())
-            .add_systems(Update, zoom_map);
+            .add_systems(Update, zoom_map.run_if(in_state(GameState::GameRunning)));
     }
 }
 
@@ -209,7 +212,14 @@ fn move_player(
 fn zoom_map(
     mut query_camera: Query<&mut Projection, With<PlayerCamera>>,
     mut scroll_evr: EventReader<MouseWheel>,
+    game_state: Res<State<GameState>>,
 ) {
+    match game_state.get() {
+        GameState::DirtyMap => {
+            return; // Do not zoom when the map is dirty
+        },
+        _ => {},
+    }
     let mut projection = query_camera.single_mut().unwrap();
     // Camera zoom controls
     if let Projection::Orthographic(projection2d) = &mut *projection {
