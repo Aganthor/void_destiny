@@ -224,7 +224,6 @@ fn spawn_chunk(
             
             let moisture_value = open_simple_moisture.get([map_config.frequency * nx, map_config.frequency * ny]);
             let texture_index = biome(elevation_value, moisture_value);
-            println!("texture_index: {}", texture_index);
 
             let tile_entity = commands
                 .spawn(TileBundle {
