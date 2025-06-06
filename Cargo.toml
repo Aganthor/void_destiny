@@ -13,7 +13,7 @@ debug = 2
 opt-level = 3
 
 [dependencies]
-bevy = "0.16.0"
+bevy = { version = "0.16.0", features = ["bevy_dev_tools"]}
 bevy_ecs_tilemap = { version = "0.16.0" }
 rand = "0.9.1"
 bevy-inspector-egui = "0.31.0"
