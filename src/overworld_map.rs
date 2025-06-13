@@ -1,12 +1,21 @@
 use bevy::{math::Vec4Swizzles, prelude::*};
 use bevy_ecs_tilemap::prelude::*;
-use bevy_ecs_tilemap::helpers;
 use rand::prelude::*;
 use noise::{NoiseFn, OpenSimplex, Fbm, MultiFractal};
 use std::collections::HashSet;
 use bevy::window::PrimaryWindow;
 use bevy_inspector_egui::{bevy_egui::EguiPlugin, prelude::*, quick::ResourceInspectorPlugin};
-use bevy_inspector_egui::bevy_egui::{EguiContext, EguiContextPass};
+//use bevy_inspector_egui::bevy_egui::{EguiContext, EguiContextPass};
+//use bevy_inspector_egui::bevy_inspector;
+use bevy_inspector_egui::{
+    DefaultInspectorConfigPlugin,
+    bevy_egui::{EguiContext, EguiContextPass, EguiContextSettings},
+    bevy_inspector::{
+        self,
+        hierarchy::{SelectedEntities, hierarchy_ui},
+        ui_for_entities_shared_components, ui_for_entity_with_children,
+    },
+};
 
 use crate::{constants::*, player::Player};
 use crate::events::{MoveEvent, MoveLegal};
@@ -64,15 +73,26 @@ impl Plugin for OverWorldMapPlugin {
             .init_resource::<OverWorldMapConfig>()
             .register_type::<OverWorldMapConfig>()
             .insert_resource(ChunkManager::default())
-            .add_plugins(EguiPlugin  { enable_multipass_for_primary_context: true})
+            .add_plugins(EguiPlugin { enable_multipass_for_primary_context: true })
             .add_plugins(ResourceInspectorPlugin::<OverWorldMapConfig>::default())
             .add_systems(Update, spawn_chunk_around_camera)
             .add_systems(Update, despawn_outofrange_chunks)
             .add_systems(Update, camera_movement)
             .add_systems(Update, overworld_map_config_change)
             .add_systems(Update, reset_map.run_if(in_state(GameState::DirtyMap)))
+            .add_systems(EguiContextPass, show_ui_system)
             .add_systems(Update, move_event_listener);
     }
+}
+
+fn show_ui_system(world: &mut World) {
+    let Ok(egui_context) = world
+        .query_filtered::<&mut EguiContext, With<PrimaryWindow>>()
+        .single(world)
+    else {
+        return;
+    };
+    let mut egui_context = egui_context.clone();
 }
 
 ///
@@ -87,6 +107,32 @@ fn overworld_map_config_change(
         next_state.set(GameState::DirtyMap);      
     }
 }
+
+// fn inspector_ui(world: &mut World) {
+//     let mut egui_context = world
+//         .query_filtered::<&mut EguiContext, With<PrimaryWindow>>()
+//         .single(world)
+//         .expect("EguiContext not found")
+//         .clone();
+
+//     egui::Window::new("UI").show(egui_context.get_mut(), |ui| {
+//         egui::ScrollArea::both().show(ui, |ui| {
+//             // equivalent to `WorldInspectorPlugin`
+//             bevy_inspector::ui_for_world(world, ui);
+
+//             // works with any `Reflect` value, including `Handle`s
+//             let mut any_reflect_value: i32 = 5;
+//             bevy_inspector::ui_for_value(&mut any_reflect_value, ui, world);
+
+//             egui::CollapsingHeader::new("Materials").show(ui, |ui| {
+//                 bevy_inspector::ui_for_assets::<StandardMaterial>(world, ui);
+//             });
+
+//             ui.heading("Entities");
+//             bevy_inspector::ui_for_entities(world, ui);
+//         });
+//     });
+// }
 
 fn reset_map(
     mut commands: Commands,
@@ -233,9 +279,18 @@ fn spawn_chunk(
             elevation_value += 0.5 * fbm.get([2.0 * nx, 2.0 * ny]);
             elevation_value += 0.25 * fbm.get([4.0 * nx, 4.0 * ny]);
             elevation_value /= 1.0 + 0.25 + 0.5;
+            // Normalize the elevation value to be between 0 and 1
+            elevation_value = (elevation_value + 1.0) / 2.0;
+            elevation_value = elevation_value.clamp(0.0, 1.0);
             elevation_value = elevation_value.powf(3.72);
+
+
             
             let moisture_value = open_simple_moisture.get([map_config.frequency * nx, map_config.frequency * ny]);
+            // Normalize the moisture value to be between 0 and 1
+            let moisture_value = (moisture_value + 1.0) / 2.0;  
+            let moisture_value = moisture_value.clamp(0.0, 1.0);
+
             let texture_index = biome(elevation_value, moisture_value);
 
             let tile_entity = commands
@@ -276,13 +331,25 @@ fn spawn_chunk(
 /// Simple function to determine the biome depending on elevation and moisture.
 /// 
 fn biome(elevation: f64, moisture: f64) -> u32 {
-    if elevation < 0.1 { return TileType::DeepWater as u32; }
-    else if elevation < 0.2 { return TileType::Shore as u32; }
-    else if elevation < 0.3 { return TileType::Grass as u32; }
-    else if elevation < 0.5 { return TileType::Grass as u32; }
-    else if elevation < 0.7 { return TileType::Savannah as u32; }
-    else if elevation < 0.9 { return TileType::Sand as u32; }
-    else { return TileType::Snow as u32; }
+    println!("BIOME: {} {}", elevation, moisture);
+    // match elevation {
+    //     e if e < 0.15 => TileType::DeepWater as u32,
+    //     e if e < 0.30 => TileType::ShallowWater as u32,
+    //     e if e < 0.35 => TileType::Shore as u32,
+    //     e if e < 0.5 => TileType::Grass as u32,
+    //     e if e < 0.65 => TileType::Forest as u32,
+    //     e if e < 0.7 => TileType::Savannah as u32,
+    //     e if e < 0.80 => TileType::Rock as u32,
+    //     e if e < 0.95 => TileType::Mountain as u32,
+    //     _ => TileType::Snow as u32,
+    // }
+    // if elevation < 0.1 { return TileType::DeepWater as u32; }
+    // else if elevation < 0.2 { return TileType::Shore as u32; }
+    // else if elevation < 0.3 { return TileType::Grass as u32; }
+    // else if elevation < 0.5 { return TileType::Grass as u32; }
+    // else if elevation < 0.7 { return TileType::Savannah as u32; }
+    // else if elevation < 0.9 { return TileType::Sand as u32; }
+    // else { return TileType::Snow as u32; }
     /*
       // these thresholds will need tuning to match your generator
   if (e < 0.1) return WATER;
@@ -293,63 +360,63 @@ fn biome(elevation: f64, moisture: f64) -> u32 {
   else if (e < 0.9) return DESERT;
   else return SNOW;
     */
-    // if elevation < 0.1 {
-    //     return TileType::DeepWater as u32;
-    // } else if elevation < 0.12 {
-    //     return TileType::ShallowWater as u32;
-    // }
-    // 
-    // if elevation > 0.9 {
-    //     return  TileType::Mountain as u32; // Mountain
-    // }
-    // 
-    // if elevation > 0.8 {
-    //     if moisture < 0.1 {
-    //         return TileType::Dirt as u32;
-    //     } // scorched
-    //     if moisture < 0.2 {
-    //         return TileType::Sand as u32;
-    //     } // bare
-    //     if moisture < 0.5 {
-    //         return TileType::Savannah as u32;
-    //     } //tundra
-    //     return TileType::Snow as u32;
-    // }
-    // 
-    // if elevation > 0.6 {
-    //     if moisture < 0.1 {
-    //         return TileType::Dirt as u32;
-    //     } // temperate_desert
-    //     if moisture < 0.33 {
-    //         return TileType::Sand as u32;
-    //     } // shrubland
-    //     return TileType::Savannah as u32; // Taiga
-    // }
-    // 
-    // if elevation > 0.3 {
-    //     if moisture < 0.16 {
-    //         return TileType::Dirt as u32;
-    //     } // temperate_desert
-    //     if moisture < 0.50 {
-    //         return TileType::Grass as u32;
-    //     } // grassland
-    //     if moisture < 0.83 {
-    //         return TileType::Forest as u32;
-    //     } //temperate_deciduous_forest
-    //     return TileType::Forest as u32; // temperate rain forest
-    // }
-    // 
-    // if moisture < 0.16 {
-    //     return TileType::Sand as u32;
-    // } // subtropical desert
-    // if moisture < 0.33 {
-    //     return TileType::Grass as u32;
-    // } // grassland
-    // if moisture < 0.66 {
-    //     return TileType::Forest as u32;
-    // } //tropical seasonal forest
-    // 
-    // TileType::Forest as u32 // tropical rain forest
+    if elevation < 0.1 {
+        return TileType::DeepWater as u32;
+    } else if elevation < 0.12 {
+        return TileType::ShallowWater as u32;
+    }
+    
+    if elevation > 0.9 {
+        return  TileType::Mountain as u32; // Mountain
+    }
+    
+    if elevation > 0.8 {
+        if moisture < 0.1 {
+            return TileType::Dirt as u32;
+        } // scorched
+        if moisture < 0.2 {
+            return TileType::Sand as u32;
+        } // bare
+        if moisture < 0.5 {
+            return TileType::Savannah as u32;
+        } //tundra
+        return TileType::Snow as u32;
+    }
+    
+    if elevation > 0.6 {
+        if moisture < 0.1 {
+            return TileType::Dirt as u32;
+        } // temperate_desert
+        if moisture < 0.33 {
+            return TileType::Sand as u32;
+        } // shrubland
+        return TileType::Savannah as u32; // Taiga
+    }
+    
+    if elevation > 0.3 {
+        if moisture < 0.16 {
+            return TileType::Dirt as u32;
+        } // temperate_desert
+        if moisture < 0.50 {
+            return TileType::Grass as u32;
+        } // grassland
+        if moisture < 0.83 {
+            return TileType::Forest as u32;
+        } //temperate_deciduous_forest
+        return TileType::Forest as u32; // temperate rain forest
+    }
+    
+    if moisture < 0.16 {
+        return TileType::Sand as u32;
+    } // subtropical desert
+    if moisture < 0.33 {
+        return TileType::Grass as u32;
+    } // grassland
+    if moisture < 0.66 {
+        return TileType::Forest as u32;
+    } //tropical seasonal forest
+    
+    TileType::Forest as u32 // tropical rain forest
 }
 
 ///

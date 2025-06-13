@@ -17,6 +17,7 @@ bevy = { version = "0.16.0", features = ["bevy_dev_tools"]}
 bevy_ecs_tilemap = { version = "0.16.0" }
 rand = "0.9.1"
 bevy-inspector-egui = "0.31.0"
+egui = "0.31.1"
 noise = "0.9.0"
 bevy_spritesheet_animation = "3.0.0"
 # Check leafwing input manager for input handling
