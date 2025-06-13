@@ -27,7 +27,6 @@ const TILE_SIZE: TilemapTileSize = TilemapTileSize { x: 32.0, y: 32.0 };
 pub struct OverWorldMapConfig {
     elevation_seed: i32,
     moisture_seed: i32,
-    magnification: f32,
     frequency: f64,
     octaves: f32,
     lacunarity: f32,
@@ -42,7 +41,6 @@ impl Default for OverWorldMapConfig {
         OverWorldMapConfig { 
             elevation_seed: rng.random(),
             moisture_seed: rng.random(),
-            magnification: 7.0,
             frequency: 2.50,
             octaves: 5.0,
             lacunarity: 0.7,
@@ -109,7 +107,7 @@ fn reset_map(
     }
     chunk_manager.spawned_chunks.clear();
     next_state.set(GameState::GameRunning);
-    println!("Map reset.");
+    info!("Map has been reset.");
 }
 
 fn camera_movement(
@@ -243,7 +241,9 @@ fn spawn_chunk(
             elevation_value += 0.5 * elevation_noise.get([2.0 * nx, 2.0 * ny]);
             elevation_value += 0.25 * elevation_noise.get([4.0 * nx, 4.0 * ny]);
             elevation_value += 0.13 * elevation_noise.get([8.0 * nx, 8.0 * ny]);
-            elevation_value /= 1.0 + 0.25 + 0.5 + 0.13;
+            elevation_value += 0.06 * elevation_noise.get([16.0 * nx, 16.0 * ny]);
+            elevation_value += 0.03 * elevation_noise.get([32.0 * nx, 32.0 * ny]);
+            elevation_value /= 1.0 + 0.25 + 0.5 + 0.13 + 0.06 + 0.03;
             // Normalize the elevation value to be between 0 and 1
             elevation_value = (elevation_value + 1.0) / 2.0;
             elevation_value = elevation_value.clamp(0.0, 1.0);
@@ -255,7 +255,9 @@ fn spawn_chunk(
             moisture_value += 0.5 * moisture_noise.get([2.0 * nx, 2.0 * ny]);
             moisture_value += 0.25 * moisture_noise.get([4.0 * nx, 4.0 * ny]);
             moisture_value += 0.13 * moisture_noise.get([8.0 * nx, 8.0 * ny]);
-            moisture_value /= 1.0 + 0.25 + 0.5 + 0.13;
+            moisture_value += 0.06 * moisture_noise.get([16.0 * nx, 16.0 * ny]);
+            moisture_value += 0.03 * moisture_noise.get([32.0 * nx, 32.0 * ny]);
+            moisture_value /= 1.0 + 0.25 + 0.5 + 0.13 + 0.06 + 0.03;
             // Normalize the moisture value to be between 0 and 1
             let moisture_value = (moisture_value + 1.0) / 2.0;  
             let moisture_value = moisture_value.clamp(0.0, 1.0);
