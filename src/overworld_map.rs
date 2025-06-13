@@ -4,22 +4,18 @@ use rand::prelude::*;
 use noise::{NoiseFn, OpenSimplex, Fbm, MultiFractal};
 use std::collections::HashSet;
 use bevy::window::PrimaryWindow;
-use bevy_inspector_egui::{bevy_egui::EguiPlugin, prelude::*, quick::ResourceInspectorPlugin};
-//use bevy_inspector_egui::bevy_egui::{EguiContext, EguiContextPass};
-//use bevy_inspector_egui::bevy_inspector;
+use bevy_inspector_egui::{bevy_egui::EguiPlugin, prelude::*};
 use bevy_inspector_egui::{
     DefaultInspectorConfigPlugin,
-    bevy_egui::{EguiContext, EguiContextPass, EguiContextSettings},
+    bevy_egui::{EguiContext, EguiContextPass},
     bevy_inspector::{
         self,
-        hierarchy::{SelectedEntities, hierarchy_ui},
-        ui_for_entities_shared_components, ui_for_entity_with_children,
     },
 };
 
-use crate::{constants::*, player::Player};
+use crate::{constants::*};
 use crate::events::{MoveEvent, MoveLegal};
-use crate::{tile_type::*, PlayerCamera};
+use crate::{tile_type::*};
 use crate::states::GameState;
 
 
@@ -35,10 +31,8 @@ pub struct OverWorldMapConfig {
     frequency: f64,
     octaves: f32,
     lacunarity: f32,
-    gain: f32,
     amplitude: f32,
-    offset_x: i32,
-    offset_y: i32,
+    pow_factor: f64,
 }
 
 impl Default for OverWorldMapConfig {
@@ -52,10 +46,8 @@ impl Default for OverWorldMapConfig {
             frequency: 2.50,
             octaves: 5.0,
             lacunarity: 0.7,
-            gain: 0.5,
-            amplitude: 0.5,            
-            offset_x: 0,
-            offset_y: 0,
+            amplitude: 0.5,
+            pow_factor: 1.75,
         }
     }
 }
@@ -74,69 +66,41 @@ impl Plugin for OverWorldMapPlugin {
             .register_type::<OverWorldMapConfig>()
             .insert_resource(ChunkManager::default())
             .add_plugins(EguiPlugin { enable_multipass_for_primary_context: true })
-            .add_plugins(ResourceInspectorPlugin::<OverWorldMapConfig>::default())
+            .add_plugins(DefaultInspectorConfigPlugin)
             .add_systems(Update, spawn_chunk_around_camera)
             .add_systems(Update, despawn_outofrange_chunks)
             .add_systems(Update, camera_movement)
-            .add_systems(Update, overworld_map_config_change)
             .add_systems(Update, reset_map.run_if(in_state(GameState::DirtyMap)))
-            .add_systems(EguiContextPass, show_ui_system)
+            .add_systems(EguiContextPass, inspector_ui)
             .add_systems(Update, move_event_listener);
     }
 }
 
-fn show_ui_system(world: &mut World) {
-    let Ok(egui_context) = world
+fn inspector_ui(world: &mut World) {
+    let mut _egui_context =  match world
         .query_filtered::<&mut EguiContext, With<PrimaryWindow>>()
-        .single(world)
-    else {
-        return;
+        .single(world) {
+        Ok(context) => {
+            egui::Window::new("Noise generation configuration").show(context.clone().get_mut(), |ui| {
+                egui::ScrollArea::both().show(ui, |ui| {
+
+                    bevy_inspector::ui_for_resource::<OverWorldMapConfig>(world, ui);
+
+                    if ui.add(egui::Button::new("Regenerate map!")).clicked() {
+                        world.resource_mut::<NextState<GameState>>().set(GameState::DirtyMap);
+                    }
+                });
+            });
+        },
+        Err(_) => {
+            return;
+        }
     };
-    let mut egui_context = egui_context.clone();
 }
-
-///
-/// This function will change the game state to DirtyMap when the OverWorldMapConfig changes.
-/// 
-fn overworld_map_config_change(
-    map_config: Res<OverWorldMapConfig>,
-    mut next_state: ResMut<NextState<GameState>>,
-){
-    if map_config.is_changed() && !map_config.is_added() {
-        println!("Overworld Map Config changed: {:?}", map_config);
-        next_state.set(GameState::DirtyMap);      
-    }
-}
-
-// fn inspector_ui(world: &mut World) {
-//     let mut egui_context = world
-//         .query_filtered::<&mut EguiContext, With<PrimaryWindow>>()
-//         .single(world)
-//         .expect("EguiContext not found")
-//         .clone();
-
-//     egui::Window::new("UI").show(egui_context.get_mut(), |ui| {
-//         egui::ScrollArea::both().show(ui, |ui| {
-//             // equivalent to `WorldInspectorPlugin`
-//             bevy_inspector::ui_for_world(world, ui);
-
-//             // works with any `Reflect` value, including `Handle`s
-//             let mut any_reflect_value: i32 = 5;
-//             bevy_inspector::ui_for_value(&mut any_reflect_value, ui, world);
-
-//             egui::CollapsingHeader::new("Materials").show(ui, |ui| {
-//                 bevy_inspector::ui_for_assets::<StandardMaterial>(world, ui);
-//             });
-
-//             ui.heading("Entities");
-//             bevy_inspector::ui_for_entities(world, ui);
-//         });
-//     });
-// }
 
 fn reset_map(
     mut commands: Commands,
-    chunks_query: Query<(Entity, &Transform)>,
+    chunks_query: Query<(Entity, &Transform), With<TilemapTileSize>>,
     mut chunk_manager: ResMut<ChunkManager>,
     mut next_state: ResMut<NextState<GameState>>,
 ) {
@@ -262,31 +226,36 @@ fn spawn_chunk(
     let texture_handle = asset_server.load("tiles/overworld_tiles.png");
     let tilemap_entity = commands.spawn_empty().id();
     let mut tile_storage = TileStorage::empty(CHUNK_SIZE.into());
-    let fbm = Fbm::<OpenSimplex>::new(map_config.elevation_seed as u32)
+    let elevation_noise = Fbm::<OpenSimplex>::new(map_config.elevation_seed as u32)
         .set_octaves(map_config.octaves as usize)
         .set_frequency(map_config.frequency)
         .set_lacunarity(map_config.lacunarity as f64);
-    let open_simple_moisture = OpenSimplex::new(map_config.moisture_seed as u32);
+    let moisture_noise = OpenSimplex::new(map_config.moisture_seed as u32);
 
     for x in 0..CHUNK_SIZE.x {        
         for y in 0..CHUNK_SIZE.y {            
             let tile_pos = TilePos { x, y };
             let nx: f64 = (chunk_pos.x as f64 * CHUNK_SIZE.x as f64 + x as f64) / OVERWORLD_SIZE_WIDTH as f64 - 0.5;
             let ny: f64 = (chunk_pos.y as f64 * CHUNK_SIZE.y as f64 + y as f64) / OVERWORLD_SIZE_HEIGHT as f64 - 0.5;
-            let mut elevation_value = fbm.get([nx, ny]);
+            let mut elevation_value = elevation_noise.get([nx, ny]);
             
-            elevation_value += 1.0 * fbm.get([1.0 * nx, 1.0 * ny]);
-            elevation_value += 0.5 * fbm.get([2.0 * nx, 2.0 * ny]);
-            elevation_value += 0.25 * fbm.get([4.0 * nx, 4.0 * ny]);
-            elevation_value /= 1.0 + 0.25 + 0.5;
+            elevation_value += 1.0 * elevation_noise.get([1.0 * nx, 1.0 * ny]);
+            elevation_value += 0.5 * elevation_noise.get([2.0 * nx, 2.0 * ny]);
+            elevation_value += 0.25 * elevation_noise.get([4.0 * nx, 4.0 * ny]);
+            elevation_value += 0.13 * elevation_noise.get([8.0 * nx, 8.0 * ny]);
+            elevation_value /= 1.0 + 0.25 + 0.5 + 0.13;
             // Normalize the elevation value to be between 0 and 1
             elevation_value = (elevation_value + 1.0) / 2.0;
             elevation_value = elevation_value.clamp(0.0, 1.0);
-            elevation_value = elevation_value.powf(3.72);
-
-
+            elevation_value = elevation_value.powf(map_config.pow_factor);
             
-            let moisture_value = open_simple_moisture.get([map_config.frequency * nx, map_config.frequency * ny]);
+            let mut moisture_value = moisture_noise.get([nx, ny]);
+
+            moisture_value += 1.0 * moisture_noise.get([1.0 * nx, 1.0 * ny]);
+            moisture_value += 0.5 * moisture_noise.get([2.0 * nx, 2.0 * ny]);
+            moisture_value += 0.25 * moisture_noise.get([4.0 * nx, 4.0 * ny]);
+            moisture_value += 0.13 * moisture_noise.get([8.0 * nx, 8.0 * ny]);
+            moisture_value /= 1.0 + 0.25 + 0.5 + 0.13;
             // Normalize the moisture value to be between 0 and 1
             let moisture_value = (moisture_value + 1.0) / 2.0;  
             let moisture_value = moisture_value.clamp(0.0, 1.0);
@@ -331,35 +300,7 @@ fn spawn_chunk(
 /// Simple function to determine the biome depending on elevation and moisture.
 /// 
 fn biome(elevation: f64, moisture: f64) -> u32 {
-    println!("BIOME: {} {}", elevation, moisture);
-    // match elevation {
-    //     e if e < 0.15 => TileType::DeepWater as u32,
-    //     e if e < 0.30 => TileType::ShallowWater as u32,
-    //     e if e < 0.35 => TileType::Shore as u32,
-    //     e if e < 0.5 => TileType::Grass as u32,
-    //     e if e < 0.65 => TileType::Forest as u32,
-    //     e if e < 0.7 => TileType::Savannah as u32,
-    //     e if e < 0.80 => TileType::Rock as u32,
-    //     e if e < 0.95 => TileType::Mountain as u32,
-    //     _ => TileType::Snow as u32,
-    // }
-    // if elevation < 0.1 { return TileType::DeepWater as u32; }
-    // else if elevation < 0.2 { return TileType::Shore as u32; }
-    // else if elevation < 0.3 { return TileType::Grass as u32; }
-    // else if elevation < 0.5 { return TileType::Grass as u32; }
-    // else if elevation < 0.7 { return TileType::Savannah as u32; }
-    // else if elevation < 0.9 { return TileType::Sand as u32; }
-    // else { return TileType::Snow as u32; }
-    /*
-      // these thresholds will need tuning to match your generator
-  if (e < 0.1) return WATER;
-  else if (e < 0.2) return BEACH;
-  else if (e < 0.3) return FOREST;
-  else if (e < 0.5) return JUNGLE;
-  else if (e < 0.7) return SAVANNAH;
-  else if (e < 0.9) return DESERT;
-  else return SNOW;
-    */
+    //println!("BIOME: {} {}", elevation, moisture);
     if elevation < 0.1 {
         return TileType::DeepWater as u32;
     } else if elevation < 0.12 {
