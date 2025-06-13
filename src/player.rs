@@ -1,7 +1,6 @@
 use bevy::{
     input::{keyboard::KeyCode, ButtonInput},
-    prelude::*,
-    state::prelude::*,
+    prelude::*
 };
 use bevy::input::mouse::{MouseWheel, MouseScrollUnit};
 use bevy_spritesheet_animation::prelude::*;
@@ -15,15 +14,6 @@ use crate::states::GameState;
 
 const MOVE_SPEED: f32 = 3.0;
 const PLAYER_TILE_SIZE: f32 = 32.0;
-
-#[derive(Component)]
-enum Direction {
-    Up,
-    Down,
-    Left,
-    Right,
-    Standing,
-}
 
 //#[derive(Component, Inspectable)]
 #[derive(Component)]
@@ -135,7 +125,7 @@ fn spawn_caracter(
     mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     mut library: ResMut<AnimationLibrary>,
 ) {
-    let player_position = Transform::from_translation(Vec3::Z * 10.0) * Transform::from_scale(Vec3::splat(1.0));
+    let _player_position = Transform::from_translation(Vec3::Z * 10.0) * Transform::from_scale(Vec3::splat(1.0));
 
     commands.spawn((Camera2d::default(), PlayerCamera));
     
