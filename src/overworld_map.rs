@@ -30,6 +30,7 @@ pub struct OverWorldMapConfig {
     frequency: f64,
     octaves: f32,
     lacunarity: f32,
+    persistance: f64,
     amplitude: f32,
     pow_factor: f64,
 }
@@ -44,8 +45,9 @@ impl Default for OverWorldMapConfig {
             frequency: 2.50,
             octaves: 5.0,
             lacunarity: 0.7,
+            persistance: 2.0,
             amplitude: 0.5,
-            pow_factor: 1.75,
+            pow_factor: 2.75,
         }
     }
 }
@@ -227,6 +229,7 @@ fn spawn_chunk(
     let elevation_noise = Fbm::<OpenSimplex>::new(map_config.elevation_seed as u32)
         .set_octaves(map_config.octaves as usize)
         .set_frequency(map_config.frequency)
+        .set_persistence(map_config.persistance as f64)
         .set_lacunarity(map_config.lacunarity as f64);
     let moisture_noise = OpenSimplex::new(map_config.moisture_seed as u32);
 
@@ -302,7 +305,7 @@ fn spawn_chunk(
 /// Simple function to determine the biome depending on elevation and moisture.
 /// 
 fn biome(elevation: f64, moisture: f64) -> u32 {
-    //println!("BIOME: {} {}", elevation, moisture);
+    println!("BIOME: elevation = {}, moisture = {}", elevation, moisture);
     if elevation < 0.1 {
         return TileType::DeepWater as u32;
     } else if elevation < 0.12 {
