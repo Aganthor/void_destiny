@@ -202,6 +202,7 @@ fn move_player(
 fn zoom_map(
     mut query_camera: Query<&mut Projection, With<PlayerCamera>>,
     mut scroll_evr: EventReader<MouseWheel>,
+    keyboard: Res<ButtonInput<KeyCode>>,
     game_state: Res<State<GameState>>,
 ) {
     match game_state.get() {
@@ -223,6 +224,13 @@ fn zoom_map(
                     projection2d.scale /= 1.25;                
                 }
             }
-        }               
+        }           
+        if keyboard.just_pressed(KeyCode::KeyQ) {
+            // zoom in
+            projection2d.scale *= 1.25;
+        } else if keyboard.just_pressed(KeyCode::KeyE) {
+            // zoom out
+            projection2d.scale /= 1.25;
+        }    
     }
 }

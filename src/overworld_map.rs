@@ -1,8 +1,9 @@
 use bevy::{math::Vec4Swizzles, prelude::*};
 use bevy_ecs_tilemap::prelude::*;
 use rand::prelude::*;
-use noise::{NoiseFn, OpenSimplex, Fbm, MultiFractal};
+use noise::{BasicMulti, Fbm, MultiFractal, NoiseFn, OpenSimplex, Perlin, Clamp, Blend, RidgedMulti};
 use std::collections::HashSet;
+use bevy::input::keyboard::Key::GroupNext;
 use bevy::window::PrimaryWindow;
 use bevy_inspector_egui::{bevy_egui::EguiPlugin, prelude::*};
 use bevy_inspector_egui::{
@@ -29,7 +30,7 @@ pub struct OverWorldMapConfig {
     moisture_seed: i32,
     frequency: f64,
     octaves: f32,
-    lacunarity: f32,
+    lacunarity: f64,
     persistance: f64,
     amplitude: f32,
     pow_factor: f64,
@@ -223,14 +224,19 @@ fn spawn_chunk(
     map_config: &OverWorldMapConfig,
     chunk_pos: IVec2,
 ) {
-    let texture_handle = asset_server.load("tiles/overworld_tiles.png");
+    // let texture_handle = asset_server.load("tiles/overworld_tiles.png");
+    let texture_handle = asset_server.load("tiles/grounds_tiles.png");
     let tilemap_entity = commands.spawn_empty().id();
     let mut tile_storage = TileStorage::empty(CHUNK_SIZE.into());
-    let elevation_noise = Fbm::<OpenSimplex>::new(map_config.elevation_seed as u32)
-        .set_octaves(map_config.octaves as usize)
-        .set_frequency(map_config.frequency)
-        .set_persistence(map_config.persistance as f64)
-        .set_lacunarity(map_config.lacunarity as f64);
+    // let elevation_noise = Fbm::<OpenSimplex>::new(map_config.elevation_seed as u32)
+    //     .set_octaves(map_config.octaves as usize)
+    //     .set_frequency(map_config.frequency)
+    //     .set_persistence(map_config.persistance)
+    //     .set_lacunarity(map_config.lacunarity);
+    let perlin = Perlin::default();
+    let ridged = RidgedMulti::<Perlin>::default();
+    let fbm = Fbm::<Perlin>::default();
+    let elevation_noise: Blend<f64, _, _, _, 2> = Blend::new(perlin, ridged, fbm);
     let moisture_noise = OpenSimplex::new(map_config.moisture_seed as u32);
 
     for x in 0..CHUNK_SIZE.x {        
@@ -254,16 +260,16 @@ fn spawn_chunk(
             
             let mut moisture_value = moisture_noise.get([nx, ny]);
 
-            moisture_value += 1.0 * moisture_noise.get([1.0 * nx, 1.0 * ny]);
-            moisture_value += 0.5 * moisture_noise.get([2.0 * nx, 2.0 * ny]);
-            moisture_value += 0.25 * moisture_noise.get([4.0 * nx, 4.0 * ny]);
-            moisture_value += 0.13 * moisture_noise.get([8.0 * nx, 8.0 * ny]);
-            moisture_value += 0.06 * moisture_noise.get([16.0 * nx, 16.0 * ny]);
-            moisture_value += 0.03 * moisture_noise.get([32.0 * nx, 32.0 * ny]);
-            moisture_value /= 1.0 + 0.25 + 0.5 + 0.13 + 0.06 + 0.03;
-            // Normalize the moisture value to be between 0 and 1
-            let moisture_value = (moisture_value + 1.0) / 2.0;  
-            let moisture_value = moisture_value.clamp(0.0, 1.0);
+            // moisture_value += 1.0 * moisture_noise.get([1.0 * nx, 1.0 * ny]);
+            // moisture_value += 0.5 * moisture_noise.get([2.0 * nx, 2.0 * ny]);
+            // moisture_value += 0.25 * moisture_noise.get([4.0 * nx, 4.0 * ny]);
+            // moisture_value += 0.13 * moisture_noise.get([8.0 * nx, 8.0 * ny]);
+            // moisture_value += 0.06 * moisture_noise.get([16.0 * nx, 16.0 * ny]);
+            // moisture_value += 0.03 * moisture_noise.get([32.0 * nx, 32.0 * ny]);
+            // moisture_value /= 1.0 + 0.25 + 0.5 + 0.13 + 0.06 + 0.03;
+            // // Normalize the moisture value to be between 0 and 1
+            // let moisture_value = (moisture_value + 1.0) / 2.0;  
+            // let moisture_value = moisture_value.clamp(0.0, 1.0);
 
             let texture_index = biome(elevation_value, moisture_value);
 
@@ -307,12 +313,14 @@ fn spawn_chunk(
 fn biome(elevation: f64, moisture: f64) -> u32 {
     println!("BIOME: elevation = {}, moisture = {}", elevation, moisture);
     if elevation < 0.1 {
-        return TileType::DeepWater as u32;
+        return GroundTiles::DarkDeepWater as u32;
     } else if elevation < 0.12 {
-        return TileType::ShallowWater as u32;
+        return GroundTiles::DarkShallowWater as u32;
     }
     
-    if elevation > 0.9 {
+    if elevation > 0.8 {
+        if moisture < 0.1 { return GroundTiles::LightSandyMountain as u32;
+        } else if moisture < 0.33 { return GroundTiles::LightGrassyMountain as u32; }
         return  TileType::Mountain as u32; // Mountain
     }
     
