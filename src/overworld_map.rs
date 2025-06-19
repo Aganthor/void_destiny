@@ -48,7 +48,7 @@ impl Default for OverWorldMapConfig {
             lacunarity: 0.7,
             persistance: 2.0,
             amplitude: 0.5,
-            pow_factor: 2.75,
+            pow_factor: 1.75,
         }
     }
 }
@@ -235,7 +235,11 @@ fn spawn_chunk(
     //     .set_lacunarity(map_config.lacunarity);
     let perlin = Perlin::default();
     let ridged = RidgedMulti::<Perlin>::default();
-    let fbm = Fbm::<Perlin>::default();
+    let fbm = Fbm::<Perlin>::new(map_config.elevation_seed as u32)
+        .set_octaves(map_config.octaves as usize)
+        .set_frequency(map_config.frequency)
+        .set_persistence(map_config.persistance)
+        .set_lacunarity(map_config.lacunarity);
     let elevation_noise: Blend<f64, _, _, _, 2> = Blend::new(perlin, ridged, fbm);
     let moisture_noise = OpenSimplex::new(map_config.moisture_seed as u32);
 
@@ -319,58 +323,63 @@ fn biome(elevation: f64, moisture: f64) -> u32 {
     }
     
     if elevation > 0.8 {
-        if moisture < 0.1 { return GroundTiles::LightSandyMountain as u32;
-        } else if moisture < 0.33 { return GroundTiles::LightGrassyMountain as u32; }
-        return  TileType::Mountain as u32; // Mountain
+        if moisture < 0.1 { 
+            return GroundTiles::LightSandyMountain as u32;
+        } else if moisture < 0.33 { 
+            return GroundTiles::LightGrassyMountain as u32; 
+        }
     }
     
     if elevation > 0.8 {
         if moisture < 0.1 {
-            return TileType::Dirt as u32;
+            return GroundTiles::LightRockyDirt as u32;
         } // scorched
         if moisture < 0.2 {
-            return TileType::Sand as u32;
+            return GroundTiles::LightDirt as u32;
         } // bare
-        if moisture < 0.5 {
-            return TileType::Savannah as u32;
-        } //tundra
-        return TileType::Snow as u32;
+        // if moisture < 0.5 {
+        //     return GroundTiles::LightSwamp as u32;
+        // } //tundra
+        // return GroundTiles::MediumFrozenPineForest as u32;
     }
     
     if elevation > 0.6 {
-        if moisture < 0.1 {
-            return TileType::Dirt as u32;
-        } // temperate_desert
+        // if moisture < 0.1 {
+        //     return GroundTiles::LightTemperateDesert as u32;
+        // } // temperate_desert
         if moisture < 0.33 {
-            return TileType::Sand as u32;
+            return GroundTiles::MediumCobbledDirt as u32;
         } // shrubland
-        return TileType::Savannah as u32; // Taiga
+        // return GroundTiles::BrightPineForest as u32; // Taiga
     }
     
     if elevation > 0.3 {
-        if moisture < 0.16 {
-            return TileType::Dirt as u32;
-        } // temperate_desert
+        // if moisture < 0.16 {
+        //     return GroundTiles::LightTemperateDesert as u32;
+        // } // temperate_desert
         if moisture < 0.50 {
-            return TileType::Grass as u32;
+            return GroundTiles::MediumGrass as u32;
         } // grassland
-        if moisture < 0.83 {
-            return TileType::Forest as u32;
-        } //temperate_deciduous_forest
-        return TileType::Forest as u32; // temperate rain forest
+        // if moisture < 0.83 {
+        // //     return GroundTiles::BrightDeciduousForest as u32;
+        // } //temperate_deciduous_forest
+        // return GroundTiles::BrightLushForest as u32; // temperate rain forest
     }
-    
+
     if moisture < 0.16 {
-        return TileType::Sand as u32;
+        return GroundTiles::LightDirt as u32;
     } // subtropical desert
+    // if moisture < 0.16 {
+    //     return GroundTiles::LightSandDesert as u32;
+    // } // subtropical desert
     if moisture < 0.33 {
-        return TileType::Grass as u32;
+        return GroundTiles::LightGrass as u32;
     } // grassland
-    if moisture < 0.66 {
-        return TileType::Forest as u32;
-    } //tropical seasonal forest
-    
-    TileType::Forest as u32 // tropical rain forest
+    // if moisture < 0.66 {
+    //     return GroundTiles::DarkDeciduousForest as u32;
+    // } //tropical seasonal forest
+    // 
+    GroundTiles::LightGrass as u32 // tropical rain forest
 }
 
 ///
