@@ -70,7 +70,7 @@ impl Plugin for OverWorldMapPlugin {
             .add_plugins(DefaultInspectorConfigPlugin)
             .add_systems(Update, spawn_chunk_around_camera)
             .add_systems(Update, despawn_outofrange_chunks)
-            .add_systems(Update, camera_movement)
+            //.add_systems(Update, camera_movement)
             .add_systems(Update, reset_map.run_if(in_state(GameState::DirtyMap)))
             .add_systems(EguiContextPass, inspector_ui)
             .add_systems(Update, move_event_listener);

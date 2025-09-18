@@ -34,7 +34,7 @@ impl Plugin for PlayerPlugin {
         app.add_plugins(SpritesheetAnimationPlugin::default())
             .add_systems(Startup, spawn_caracter)
             .add_systems(PreUpdate, try_move_player)
-            //.add_systems(Update, (move_player, update_camera).chain())
+            .add_systems(Update, (move_player, update_camera).chain())
             .add_systems(Update, zoom_map.run_if(in_state(GameState::GameRunning)));
     }
 }
