@@ -250,16 +250,16 @@ fn spawn_chunk(
             let ny: f64 = (chunk_pos.y as f64 * CHUNK_SIZE.y as f64 + y as f64) / OVERWORLD_SIZE_HEIGHT as f64 - 0.5;
             let mut elevation_value = elevation_noise.get([nx, ny]);
             
-            elevation_value += 1.0 * elevation_noise.get([1.0 * nx, 1.0 * ny]);
-            elevation_value += 0.5 * elevation_noise.get([2.0 * nx, 2.0 * ny]);
-            elevation_value += 0.25 * elevation_noise.get([4.0 * nx, 4.0 * ny]);
-            elevation_value += 0.13 * elevation_noise.get([8.0 * nx, 8.0 * ny]);
-            elevation_value += 0.06 * elevation_noise.get([16.0 * nx, 16.0 * ny]);
-            elevation_value += 0.03 * elevation_noise.get([32.0 * nx, 32.0 * ny]);
-            elevation_value /= 1.0 + 0.25 + 0.5 + 0.13 + 0.06 + 0.03;
-            // Normalize the elevation value to be between 0 and 1
-            elevation_value = (elevation_value + 1.0) / 2.0;
-            elevation_value = elevation_value.clamp(0.0, 1.0);
+            // elevation_value += 1.0 * elevation_noise.get([1.0 * nx, 1.0 * ny]);
+            // elevation_value += 0.5 * elevation_noise.get([2.0 * nx, 2.0 * ny]);
+            // elevation_value += 0.25 * elevation_noise.get([4.0 * nx, 4.0 * ny]);
+            // elevation_value += 0.13 * elevation_noise.get([8.0 * nx, 8.0 * ny]);
+            // elevation_value += 0.06 * elevation_noise.get([16.0 * nx, 16.0 * ny]);
+            // elevation_value += 0.03 * elevation_noise.get([32.0 * nx, 32.0 * ny]);
+            // elevation_value /= 1.0 + 0.25 + 0.5 + 0.13 + 0.06 + 0.03;
+            // // Normalize the elevation value to be between 0 and 1
+            // elevation_value = (elevation_value + 1.0) / 2.0;
+            // elevation_value = elevation_value.clamp(0.0, 1.0);
             elevation_value = elevation_value.powf(map_config.pow_factor);
             
             let mut moisture_value = moisture_noise.get([nx, ny]);
@@ -316,6 +316,15 @@ fn spawn_chunk(
 /// 
 fn biome(elevation: f64, moisture: f64) -> u32 {
     println!("BIOME: elevation = {}, moisture = {}", elevation, moisture);
+    if elevation < 0.3 {
+        return GroundTiles::DarkDeepWater as u32;
+    } else if elevation >= 0.3 && elevation < 0.35 {
+        return GroundTiles::LightShallowWater as u32;
+    } else if elevation >= 0.35 && elevation < 0.55 {
+        return GroundTiles::LightDirt as u32;
+    }
+
+    /*
     if elevation < 0.1 {
         return GroundTiles::DarkDeepWater as u32;
     } else if elevation < 0.12 {
@@ -379,6 +388,7 @@ fn biome(elevation: f64, moisture: f64) -> u32 {
     //     return GroundTiles::DarkDeciduousForest as u32;
     // } //tropical seasonal forest
     // 
+    */
     GroundTiles::LightGrass as u32 // tropical rain forest
 }
 
