@@ -44,7 +44,7 @@ fn try_move_player(
     library: Res<AnimationLibrary>,
     time: Res<Time>,
     mut player_query: Query<(&mut Sprite, &mut SpritesheetAnimation, &Transform, &Player)>,
-    mut move_event: EventWriter<MoveEvent>,
+    mut move_event: MessageWriter<MoveEvent>,
 ) {
     let mut direction = Vec3::ZERO;
     let Ok((mut _sprite, mut animation, player_transform, player)) = player_query.single_mut() else { return; };
@@ -180,7 +180,7 @@ fn spawn_caracter(
 
 fn move_player(
     mut q: Query<&mut Transform, With<Player>>,
-    mut valid_move: EventReader<MoveLegal>,
+    mut valid_move: MessageReader<MoveLegal>,
 ) {
     for event in valid_move.read() {
         if event.destination.is_none() {
@@ -201,7 +201,7 @@ fn move_player(
 
 fn zoom_map(
     mut query_camera: Query<&mut Projection, With<PlayerCamera>>,
-    mut scroll_evr: EventReader<MouseWheel>,
+    mut scroll_evr: MessageReader<MouseWheel>,
     keyboard: Res<ButtonInput<KeyCode>>,
     game_state: Res<State<GameState>>,
 ) {

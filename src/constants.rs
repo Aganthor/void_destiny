@@ -1,8 +1,8 @@
 use bevy::math::UVec2;
 
 // Game window dimensions
-pub const WINDOW_WIDTH: f32 = 1024.0;
-pub const WINDOW_HEIGHT: f32 = 768.0;
+pub const WINDOW_WIDTH: u32 = 1024;
+pub const WINDOW_HEIGHT: u32 = 768;
 
 // Chunks and Overworld map size
 pub const CHUNK_SIZE: UVec2 = UVec2 { x: 16, y: 16 };

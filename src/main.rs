@@ -12,7 +12,7 @@
 
 use bevy::{
     prelude::*,
-    window::PresentMode,
+    window::{PresentMode, WindowResolution},
 };
 
 mod constants;
@@ -39,12 +39,12 @@ use events::*;
 
 fn main() {
     App::new()
-        .add_event::<MoveEvent>()
-        .add_event::<MoveLegal>()
+        .add_message::<MoveEvent>()
+        .add_message::<MoveLegal>()
         .add_plugins(DefaultPlugins.set(WindowPlugin {
             primary_window: Some(Window {
                 title: "Void destiny - The roguelike game!".into(),
-                resolution: (WINDOW_WIDTH, WINDOW_HEIGHT).into(),
+                resolution: WindowResolution::new(WINDOW_WIDTH, WINDOW_HEIGHT),
                 present_mode: PresentMode::AutoVsync,
                 ..default()
             }),

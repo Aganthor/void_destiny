@@ -1,5 +1,6 @@
 use bevy::{math::Vec4Swizzles, prelude::*};
 use bevy_ecs_tilemap::prelude::*;
+use bevy_inspector_egui::bevy_egui::EguiPrimaryContextPass;
 use rand::prelude::*;
 use noise::{BasicMulti, Fbm, MultiFractal, NoiseFn, OpenSimplex, Perlin, Clamp, Blend, RidgedMulti};
 use std::collections::HashSet;
@@ -8,7 +9,7 @@ use bevy::window::PrimaryWindow;
 use bevy_inspector_egui::{bevy_egui::EguiPlugin, prelude::*};
 use bevy_inspector_egui::{
     DefaultInspectorConfigPlugin,
-    bevy_egui::{EguiContext, EguiContextPass},
+    bevy_egui::{EguiContext},
     bevy_inspector::{
         self,
     },
@@ -66,13 +67,13 @@ impl Plugin for OverWorldMapPlugin {
             .init_resource::<OverWorldMapConfig>()
             .register_type::<OverWorldMapConfig>()
             .insert_resource(ChunkManager::default())
-            .add_plugins(EguiPlugin { enable_multipass_for_primary_context: true })
+            .add_plugins(EguiPlugin::default())
             .add_plugins(DefaultInspectorConfigPlugin)
             .add_systems(Update, spawn_chunk_around_camera)
             .add_systems(Update, despawn_outofrange_chunks)
             .add_systems(Update, camera_movement)
             .add_systems(Update, reset_map.run_if(in_state(GameState::DirtyMap)))
-            .add_systems(EguiContextPass, inspector_ui)
+            .add_systems(EguiPrimaryContextPass, inspector_ui)
             .add_systems(Update, move_event_listener);
     }
 }
@@ -398,7 +399,7 @@ fn biome(elevation: f64, moisture: f64) -> u32 {
 /// a MoveLegal event.
 /// 
 fn move_event_listener(
-    mut move_events: EventReader<MoveEvent>,
+    mut move_events: MessageReader<MoveEvent>,
     tilemap_q: Query<(
         &TilemapSize,
         &TilemapGridSize,
@@ -407,7 +408,7 @@ fn move_event_listener(
         &Transform,
     )>,
     tile_query: Query<&mut TileTextureIndex>,
-    mut move_legal: EventWriter<MoveLegal>,
+    mut move_legal: MessageWriter<MoveLegal>,
 ) {
     for move_event in move_events.read() {
         for (map_size, grid_size, map_type, tile_storage, map_transform) in tilemap_q.iter() {
@@ -417,7 +418,7 @@ fn move_event_listener(
             // Make sure that the destination is correct relative to the map due to any map transformation.
             let dest_in_map_pos: Vec2 = {
                 let destination_pos = Vec4::from((move_event.destination.unwrap(), 1.0));
-                let dest_in_map_pos = map_transform.compute_matrix().inverse() * destination_pos;
+                let dest_in_map_pos = map_transform.to_matrix().inverse() * destination_pos;
                 dest_in_map_pos.xy()
             };
             // Once we have a world position we can transform it into a possible tile position.
