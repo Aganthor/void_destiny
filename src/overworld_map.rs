@@ -1,18 +1,14 @@
 use bevy::{math::Vec4Swizzles, prelude::*};
 use bevy_ecs_tilemap::prelude::*;
-use bevy_inspector_egui::bevy_egui::EguiPrimaryContextPass;
 use rand::prelude::*;
 use noise::{BasicMulti, Fbm, MultiFractal, NoiseFn, OpenSimplex, Perlin, Clamp, Blend, RidgedMulti};
 use std::collections::HashSet;
-use bevy::input::keyboard::Key::GroupNext;
 use bevy::window::PrimaryWindow;
-use bevy_inspector_egui::{bevy_egui::EguiPlugin, prelude::*};
 use bevy_inspector_egui::{
+    bevy_inspector,
     DefaultInspectorConfigPlugin,
-    bevy_egui::{EguiContext},
-    bevy_inspector::{
-        self,
-    },
+    bevy_egui::{EguiContext, EguiPlugin, EguiPrimaryContextPass, PrimaryEguiContext},
+    prelude::*,
 };
 
 use crate::{constants::*};
@@ -64,11 +60,11 @@ pub struct OverWorldMapPlugin;
 impl Plugin for OverWorldMapPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(TilemapPlugin)
-            .init_resource::<OverWorldMapConfig>()
-            .register_type::<OverWorldMapConfig>()
             .insert_resource(ChunkManager::default())
             .add_plugins(EguiPlugin::default())
             .add_plugins(DefaultInspectorConfigPlugin)
+            .init_resource::<OverWorldMapConfig>()
+            .register_type::<OverWorldMapConfig>()
             .add_systems(Update, spawn_chunk_around_camera)
             .add_systems(Update, despawn_outofrange_chunks)
             .add_systems(Update, camera_movement)
@@ -79,25 +75,23 @@ impl Plugin for OverWorldMapPlugin {
 }
 
 fn inspector_ui(world: &mut World) {
-    let mut _egui_context =  match world
-        .query_filtered::<&mut EguiContext, With<PrimaryWindow>>()
-        .single(world) {
-        Ok(context) => {
-            egui::Window::new("Noise generation configuration").show(context.clone().get_mut(), |ui| {
-                egui::ScrollArea::both().show(ui, |ui| {
-
-                    bevy_inspector::ui_for_resource::<OverWorldMapConfig>(world, ui);
-
-                    if ui.add(egui::Button::new("Regenerate map!")).clicked() {
-                        world.resource_mut::<NextState<GameState>>().set(GameState::DirtyMap);
-                    }
-                });
-            });
-        },
-        Err(_) => {
-            return;
-        }
+    let Ok(egui_context) = world
+        .query_filtered::<&mut EguiContext, With<PrimaryEguiContext>>()
+        .single(world)
+    else {
+        return;
     };
+    let mut ctx = egui_context.clone();
+    egui::Window::new("Noise generation configuration").show(ctx.get_mut(), |ui| {
+        egui::ScrollArea::both().show(ui, |ui| {
+
+            bevy_inspector::ui_for_resource::<OverWorldMapConfig>(world, ui);
+
+            if ui.add(egui::Button::new("Regenerate map!")).clicked() {
+                world.resource_mut::<NextState<GameState>>().set(GameState::DirtyMap);
+            }
+        });
+    });
 }
 
 fn reset_map(
