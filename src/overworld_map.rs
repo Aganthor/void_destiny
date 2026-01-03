@@ -3,15 +3,12 @@ use bevy_ecs_tilemap::prelude::*;
 use rand::prelude::*;
 use noise::{BasicMulti, Fbm, MultiFractal, NoiseFn, OpenSimplex, Perlin, Clamp, Blend, RidgedMulti};
 use std::collections::HashSet;
-use bevy::input::keyboard::Key::GroupNext;
 use bevy::window::PrimaryWindow;
-use bevy_inspector_egui::{bevy_egui::EguiPlugin, prelude::*};
 use bevy_inspector_egui::{
+    bevy_inspector,
     DefaultInspectorConfigPlugin,
-    bevy_egui::{EguiContext, EguiContextPass},
-    bevy_inspector::{
-        self,
-    },
+    bevy_egui::{EguiContext, EguiPlugin, EguiPrimaryContextPass, PrimaryEguiContext},
+    prelude::*,
 };
 
 use crate::{constants::*};
@@ -63,40 +60,38 @@ pub struct OverWorldMapPlugin;
 impl Plugin for OverWorldMapPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(TilemapPlugin)
+            .insert_resource(ChunkManager::default())
+            .add_plugins(EguiPlugin::default())
+            .add_plugins(DefaultInspectorConfigPlugin)
             .init_resource::<OverWorldMapConfig>()
             .register_type::<OverWorldMapConfig>()
-            .insert_resource(ChunkManager::default())
-            .add_plugins(EguiPlugin { enable_multipass_for_primary_context: true })
-            .add_plugins(DefaultInspectorConfigPlugin)
             .add_systems(Update, spawn_chunk_around_camera)
             .add_systems(Update, despawn_outofrange_chunks)
             //.add_systems(Update, camera_movement)
             .add_systems(Update, reset_map.run_if(in_state(GameState::DirtyMap)))
-            .add_systems(EguiContextPass, inspector_ui)
+            .add_systems(EguiPrimaryContextPass, inspector_ui)
             .add_systems(Update, move_event_listener);
     }
 }
 
 fn inspector_ui(world: &mut World) {
-    let mut _egui_context =  match world
-        .query_filtered::<&mut EguiContext, With<PrimaryWindow>>()
-        .single(world) {
-        Ok(context) => {
-            egui::Window::new("Noise generation configuration").show(context.clone().get_mut(), |ui| {
-                egui::ScrollArea::both().show(ui, |ui| {
-
-                    bevy_inspector::ui_for_resource::<OverWorldMapConfig>(world, ui);
-
-                    if ui.add(egui::Button::new("Regenerate map!")).clicked() {
-                        world.resource_mut::<NextState<GameState>>().set(GameState::DirtyMap);
-                    }
-                });
-            });
-        },
-        Err(_) => {
-            return;
-        }
+    let Ok(egui_context) = world
+        .query_filtered::<&mut EguiContext, With<PrimaryEguiContext>>()
+        .single(world)
+    else {
+        return;
     };
+    let mut ctx = egui_context.clone();
+    egui::Window::new("Noise generation configuration").show(ctx.get_mut(), |ui| {
+        egui::ScrollArea::both().show(ui, |ui| {
+
+            bevy_inspector::ui_for_resource::<OverWorldMapConfig>(world, ui);
+
+            if ui.add(egui::Button::new("Regenerate map!")).clicked() {
+                world.resource_mut::<NextState<GameState>>().set(GameState::DirtyMap);
+            }
+        });
+    });
 }
 
 fn reset_map(
@@ -250,16 +245,16 @@ fn spawn_chunk(
             let ny: f64 = (chunk_pos.y as f64 * CHUNK_SIZE.y as f64 + y as f64) / OVERWORLD_SIZE_HEIGHT as f64 - 0.5;
             let mut elevation_value = elevation_noise.get([nx, ny]);
             
-            elevation_value += 1.0 * elevation_noise.get([1.0 * nx, 1.0 * ny]);
-            elevation_value += 0.5 * elevation_noise.get([2.0 * nx, 2.0 * ny]);
-            elevation_value += 0.25 * elevation_noise.get([4.0 * nx, 4.0 * ny]);
-            elevation_value += 0.13 * elevation_noise.get([8.0 * nx, 8.0 * ny]);
-            elevation_value += 0.06 * elevation_noise.get([16.0 * nx, 16.0 * ny]);
-            elevation_value += 0.03 * elevation_noise.get([32.0 * nx, 32.0 * ny]);
-            elevation_value /= 1.0 + 0.25 + 0.5 + 0.13 + 0.06 + 0.03;
-            // Normalize the elevation value to be between 0 and 1
-            elevation_value = (elevation_value + 1.0) / 2.0;
-            elevation_value = elevation_value.clamp(0.0, 1.0);
+            // elevation_value += 1.0 * elevation_noise.get([1.0 * nx, 1.0 * ny]);
+            // elevation_value += 0.5 * elevation_noise.get([2.0 * nx, 2.0 * ny]);
+            // elevation_value += 0.25 * elevation_noise.get([4.0 * nx, 4.0 * ny]);
+            // elevation_value += 0.13 * elevation_noise.get([8.0 * nx, 8.0 * ny]);
+            // elevation_value += 0.06 * elevation_noise.get([16.0 * nx, 16.0 * ny]);
+            // elevation_value += 0.03 * elevation_noise.get([32.0 * nx, 32.0 * ny]);
+            // elevation_value /= 1.0 + 0.25 + 0.5 + 0.13 + 0.06 + 0.03;
+            // // Normalize the elevation value to be between 0 and 1
+            // elevation_value = (elevation_value + 1.0) / 2.0;
+            // elevation_value = elevation_value.clamp(0.0, 1.0);
             elevation_value = elevation_value.powf(map_config.pow_factor);
             
             let mut moisture_value = moisture_noise.get([nx, ny]);
@@ -316,6 +311,15 @@ fn spawn_chunk(
 /// 
 fn biome(elevation: f64, moisture: f64) -> u32 {
     println!("BIOME: elevation = {}, moisture = {}", elevation, moisture);
+    if elevation < 0.3 {
+        return GroundTiles::DarkDeepWater as u32;
+    } else if elevation >= 0.3 && elevation < 0.35 {
+        return GroundTiles::LightShallowWater as u32;
+    } else if elevation >= 0.35 && elevation < 0.55 {
+        return GroundTiles::LightDirt as u32;
+    }
+
+    /*
     if elevation < 0.1 {
         return GroundTiles::DarkDeepWater as u32;
     } else if elevation < 0.12 {
@@ -379,6 +383,7 @@ fn biome(elevation: f64, moisture: f64) -> u32 {
     //     return GroundTiles::DarkDeciduousForest as u32;
     // } //tropical seasonal forest
     // 
+    */
     GroundTiles::LightGrass as u32 // tropical rain forest
 }
 
@@ -388,7 +393,7 @@ fn biome(elevation: f64, moisture: f64) -> u32 {
 /// a MoveLegal event.
 /// 
 fn move_event_listener(
-    mut move_events: EventReader<MoveEvent>,
+    mut move_events: MessageReader<MoveEvent>,
     tilemap_q: Query<(
         &TilemapSize,
         &TilemapGridSize,
@@ -397,7 +402,7 @@ fn move_event_listener(
         &Transform,
     )>,
     tile_query: Query<&mut TileTextureIndex>,
-    mut move_legal: EventWriter<MoveLegal>,
+    mut move_legal: MessageWriter<MoveLegal>,
 ) {
     for move_event in move_events.read() {
         for (map_size, grid_size, map_type, tile_storage, map_transform) in tilemap_q.iter() {
@@ -407,7 +412,7 @@ fn move_event_listener(
             // Make sure that the destination is correct relative to the map due to any map transformation.
             let dest_in_map_pos: Vec2 = {
                 let destination_pos = Vec4::from((move_event.destination.unwrap(), 1.0));
-                let dest_in_map_pos = map_transform.compute_matrix().inverse() * destination_pos;
+                let dest_in_map_pos = map_transform.to_matrix().inverse() * destination_pos;
                 dest_in_map_pos.xy()
             };
             // Once we have a world position we can transform it into a possible tile position.
