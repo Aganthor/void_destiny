@@ -22,11 +22,11 @@ use constants::*;
 mod player;
 use player::*;
 
-mod overworld_map;
-use overworld_map::*;
-
-// mod worldgen;
-// use worldgen::*;
+mod map;
+use crate::map::{
+    overworld_map::OverWorldMapPlugin,
+    world_map::WorldMapPlugin,
+};
 
 mod events;
 mod states;
@@ -55,8 +55,8 @@ fn main() {
         .init_state::<GameState>()
         //.add_plugin(DebugPlugin)
         .add_plugins(PlayerPlugin)
-        .add_plugins(OverWorldMapPlugin)
-        //.add_plugins(WorldGenPlugin)
+        .add_plugins(WorldMapPlugin)
+        //.add_plugins(OverWorldMapPlugin)
         .run();
 }
 
