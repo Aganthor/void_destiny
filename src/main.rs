@@ -1,8 +1,5 @@
 /// Void destiny is a RPG roguelike game written in rust with bevy!
 ///
-///  Some crates to see / use :
-///     - https://github.com/StarArawn/bevy_ecs_tilemap
-///     - https://github.com/MrGVSV/bevy_tileset
 /// 
 /// Some nice sprite : https://toen.itch.io/toens-medieval-strategy
 /// 
@@ -34,9 +31,6 @@ use states::*;
 
 use events::*;
 
-// mod debug_plugin;
-// use debug_plugin::*;
-
 fn main() {
     App::new()
         .add_message::<MoveEvent>()
@@ -53,7 +47,6 @@ fn main() {
         .set(ImagePlugin::default_nearest()),
         )
         .init_state::<GameState>()
-        //.add_plugin(DebugPlugin)
         .add_plugins(PlayerPlugin)
         .add_plugins(WorldMapPlugin)
         //.add_plugins(OverWorldMapPlugin)
