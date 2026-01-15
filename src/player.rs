@@ -12,7 +12,7 @@ use crate::events::{
 
 use crate::states::GameState;
 
-const MOVE_SPEED: f32 = 3.0;
+const MOVE_SPEED: f32 = 20.0;
 const PLAYER_TILE_SIZE: f32 = 32.0;
 
 //#[derive(Component, Inspectable)]
