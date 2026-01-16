@@ -18,7 +18,7 @@ fn setup_world_map(
      // Load a map then spawn it
     commands.spawn((
         // Only the [`TiledMap`] component is actually required to spawn a map.
-        TiledMap(asset_server.load("maps/test.tmx")),
+        TiledMap(asset_server.load("tiled_map_assets/overworld_map.tmx")),
         // But you can add extra components to change the defaults settings and how
         // your map is actually displayed
         TilemapAnchor::Center,

@@ -2,6 +2,8 @@
 ///
 /// 
 /// Some nice sprite : https://toen.itch.io/toens-medieval-strategy
+/// Spell art : https://opengameart.org/content/painterly-spell-icons-part-1
+/// 
 /// 
 /// TODO:
 /// - Save world map size in a ron file
