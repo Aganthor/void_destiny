@@ -8,6 +8,30 @@
         "."
     ],
     "properties": [
+        {
+            "name": "ExpandRPGMTileset_IntermediateFormat",
+            "propertytype": "",
+            "type": "int",
+            "value": 1
+        },
+        {
+            "name": "ExpandRPGMTileset_TileHeight",
+            "propertytype": "",
+            "type": "int",
+            "value": 16
+        },
+        {
+            "name": "ExpandRPGMTileset_TileWidth",
+            "propertytype": "",
+            "type": "int",
+            "value": 16
+        },
+        {
+            "name": "ExpandRPGMTileset_UseTransparentColor",
+            "propertytype": "",
+            "type": "bool",
+            "value": true
+        }
     ],
     "propertyTypes": [
     ]

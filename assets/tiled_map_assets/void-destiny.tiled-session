@@ -5,26 +5,34 @@
     },
     "activeFile": "overworld_map.tmx",
     "expandedProjectPaths": [
-        ".",
-        "tilesets"
+        "tilesets",
+        "."
     ],
     "file.lastUsedOpenFilter": "All Files (*)",
     "fileStates": {
+        "C:/Users/bergeronl/Documents/programmation/assets/lpc-terrains/lpc-terrains/terrain-v7.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
         "overworld_map.tmx": {
-            "scale": 2,
+            "scale": 3,
             "selectedLayer": 0,
             "viewCenter": {
-                "x": 294.25,
-                "y": 194
+                "x": 345.3333333333333,
+                "y": 231
             }
         },
         "tilesets/FDR_Overworld.tsx": {
             "scaleInDock": 1,
-            "scaleInEditor": 1
+            "scaleInEditor": 2
         },
         "tilesets/FDR_Overworld_Ground.tsx": {
             "scaleInDock": 1,
-            "scaleInEditor": 5.5
+            "scaleInEditor": 2
+        },
+        "tilesets/FDR_Overworld_Water.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 3
         }
     },
     "last.imagePath": "C:/Users/bergeronl/Documents/programmation/rust/void_destiny/assets/tiled_map_assets/tilesets",
@@ -35,13 +43,17 @@
     "map.width": 64,
     "openFiles": [
         "overworld_map.tmx",
-        "tilesets/FDR_Overworld_Ground.tsx"
+        "tilesets/FDR_Overworld_Ground.tsx",
+        "tilesets/FDR_Overworld.tsx",
+        "tilesets/FDR_Overworld_Water.tsx"
     ],
     "project": "void-destiny.tiled-project",
     "recentFiles": [
+        "tilesets/FDR_Overworld_Water.tsx",
+        "tilesets/FDR_Overworld.tsx",
         "tilesets/FDR_Overworld_Ground.tsx",
         "overworld_map.tmx",
-        "tilesets/FDR_Overworld.tsx"
+        "C:/Users/bergeronl/Documents/programmation/assets/lpc-terrains/lpc-terrains/terrain-v7.tsx"
     ],
     "tileset.lastUsedFormat": "tsx",
     "tileset.tileSize": {
