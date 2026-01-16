@@ -20,6 +20,7 @@ bevy-inspector-egui = "0.35.0"
 egui = "0.33.3"
 noise = "0.9.0"
 bevy_spritesheet_animation = "4.0.0"
+bevy_ecs_tiled = "0.10"
 # Check leafwing input manager for input handling
 
 [package.metadata.scripts]

@@ -12,7 +12,7 @@ use crate::events::{
 
 use crate::states::GameState;
 
-const MOVE_SPEED: f32 = 3.0;
+const MOVE_SPEED: f32 = 20.0;
 const PLAYER_TILE_SIZE: f32 = 32.0;
 
 //#[derive(Component, Inspectable)]
@@ -34,7 +34,7 @@ impl Plugin for PlayerPlugin {
         app.add_plugins(SpritesheetAnimationPlugin::default())
             .add_systems(Startup, spawn_caracter)
             .add_systems(PreUpdate, try_move_player)
-            //.add_systems(Update, (move_player, update_camera).chain())
+            .add_systems(Update, (move_player, update_camera).chain())
             .add_systems(Update, zoom_map.run_if(in_state(GameState::GameRunning)));
     }
 }
@@ -125,8 +125,6 @@ fn spawn_caracter(
     mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     mut library: ResMut<AnimationLibrary>,
 ) {
-    let _player_position = Transform::from_translation(Vec3::Z * 10.0) * Transform::from_scale(Vec3::splat(1.0));
-
     commands.spawn((Camera2d::default(), PlayerCamera));
     
     let spritesheet = Spritesheet::new(3, 4);
@@ -170,8 +168,8 @@ fn spawn_caracter(
     let mut player = commands.spawn((
         Sprite::from_atlas_image(image, atlas),
         SpritesheetAnimation::from_id(run_animation_down_id),
-        )
-    );
+        Transform::from_translation(Vec3::Z * 10.0) * Transform::from_scale(Vec3::splat(1.0))
+    ));
     player.insert(Player {
         speed: MOVE_SPEED,
         size: PLAYER_TILE_SIZE,
