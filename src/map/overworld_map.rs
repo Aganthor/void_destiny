@@ -1,9 +1,8 @@
 use bevy::{math::Vec4Swizzles, prelude::*};
 use bevy_ecs_tilemap::prelude::*;
 use rand::prelude::*;
-use noise::{BasicMulti, Fbm, MultiFractal, NoiseFn, OpenSimplex, Perlin, Clamp, Blend, RidgedMulti};
+use noise::{Fbm, MultiFractal, NoiseFn, OpenSimplex, Perlin, Clamp, Blend, RidgedMulti};
 use std::collections::HashSet;
-use bevy::window::PrimaryWindow;
 use bevy_inspector_egui::{
     bevy_inspector,
     DefaultInspectorConfigPlugin,
@@ -18,13 +17,16 @@ use crate::states::GameState;
 
 
 const TILE_SIZE: TilemapTileSize = TilemapTileSize { x: 32.0, y: 32.0 };
+// maximum number of chunks that can exist (derived from OVERWORLD_SIZE_* and CHUNK_SIZE)
+const MAX_SPAWNED_CHUNKS: usize = ((OVERWORLD_SIZE_WIDTH as usize + CHUNK_SIZE.x as usize - 1) / CHUNK_SIZE.x as usize)
+    * ((OVERWORLD_SIZE_HEIGHT as usize + CHUNK_SIZE.y as usize - 1) / CHUNK_SIZE.y as usize);
 
 
 #[derive(Reflect, Resource, InspectorOptions, Debug, Clone)]
 #[reflect(Resource, InspectorOptions)]
 pub struct OverWorldMapConfig {
-    elevation_seed: i32,
-    moisture_seed: i32,
+    e_seed: i32,
+    m_seed: i32,
     frequency: f64,
     octaves: f32,
     lacunarity: f64,
@@ -38,8 +40,8 @@ impl Default for OverWorldMapConfig {
         let mut rng = rand::rng();
 
         OverWorldMapConfig { 
-            elevation_seed: rng.random(),
-            moisture_seed: rng.random(),
+            e_seed: rng.random(),
+            m_seed: rng.random(),
             frequency: 2.50,
             octaves: 5.0,
             lacunarity: 0.7,
@@ -170,13 +172,35 @@ fn spawn_chunk_around_camera(
     mut chunk_manager: ResMut<ChunkManager>,
     map_config: Res<OverWorldMapConfig>,
 ) {
+    // number of chunks that fit in the overworld grid
+    let chunks_x = ((OVERWORLD_SIZE_WIDTH as i32 + CHUNK_SIZE.x as i32 - 1) / CHUNK_SIZE.x as i32);
+    let chunks_y = ((OVERWORLD_SIZE_HEIGHT as i32 + CHUNK_SIZE.y as i32 - 1) / CHUNK_SIZE.y as i32);
+
     for transform in camera_query.iter() {
         let camera_chunk_pos = camera_pos_to_chunk_pos(&transform.translation.xy());
-        for y in (camera_chunk_pos.y - 2)..(camera_chunk_pos.y + 2) {
-            for x in (camera_chunk_pos.x - 2)..(camera_chunk_pos.x + 2) {
-                if !chunk_manager.spawned_chunks.contains(&IVec2::new(x, y)) {
-                    chunk_manager.spawned_chunks.insert(IVec2::new(x, y));
-                    spawn_chunk(&mut commands, &asset_server, &map_config, IVec2::new(x, y));
+
+        // clamp spawn window to the finite map (avoid negative/overflow chunk coords)
+        let min_x = 0;
+        let max_x = chunks_x - 1;
+        let min_y = 0;
+        let max_y = chunks_y - 1;
+
+        let start_x = (camera_chunk_pos.x - 2).clamp(min_x, max_x);
+        let end_x = (camera_chunk_pos.x + 2).clamp(min_x, max_x);
+        let start_y = (camera_chunk_pos.y - 2).clamp(min_y, max_y);
+        let end_y = (camera_chunk_pos.y + 2).clamp(min_y, max_y);
+
+        for y in start_y..=end_y {
+            for x in start_x..=end_x {
+                // optional: stop spawning if we've reached the overall maximum
+                if chunk_manager.spawned_chunks.len() >= MAX_SPAWNED_CHUNKS {
+                    return;
+                }
+
+                let pos = IVec2::new(x, y);
+                if !chunk_manager.spawned_chunks.contains(&pos) {
+                    chunk_manager.spawned_chunks.insert(pos);
+                    spawn_chunk(&mut commands, &asset_server, &map_config, pos);
                 }
             }
         }
@@ -193,7 +217,7 @@ fn despawn_outofrange_chunks(
     chunks_query: Query<(Entity, &Transform)>,
     mut chunk_manager: ResMut<ChunkManager>
 ) {
-    const CHUNK_DESPAWN_DISTANCE: f32 = (CHUNK_SIZE.x as f32 * TILE_SIZE.x) * 3.5;
+    const CHUNK_DESPAWN_DISTANCE: f32 = (CHUNK_SIZE.x as f32 * TILE_SIZE.x) * 6.5;
 
     for camera_transform in camera_query.iter() {
         for (entity, chunk_transform) in chunks_query.iter() {
@@ -219,59 +243,58 @@ fn spawn_chunk(
     map_config: &OverWorldMapConfig,
     chunk_pos: IVec2,
 ) {
-    // let texture_handle = asset_server.load("tiles/overworld_tiles.png");
     let texture_handle = asset_server.load("tiles/grounds_tiles.png");
     let tilemap_entity = commands.spawn_empty().id();
     let mut tile_storage = TileStorage::empty(CHUNK_SIZE.into());
-    // let elevation_noise = Fbm::<OpenSimplex>::new(map_config.elevation_seed as u32)
-    //     .set_octaves(map_config.octaves as usize)
-    //     .set_frequency(map_config.frequency)
-    //     .set_persistence(map_config.persistance)
-    //     .set_lacunarity(map_config.lacunarity);
-    //let perlin = Perlin::default();
-    let open_simplex: OpenSimplex = OpenSimplex::new(map_config.elevation_seed as u32);
-    let ridged = RidgedMulti::<OpenSimplex>::default();
-    let fbm = Fbm::<OpenSimplex>::new(map_config.elevation_seed as u32)
+
+    let open_simplex: OpenSimplex = OpenSimplex::new(map_config.e_seed as u32);
+    let ridged = RidgedMulti::<OpenSimplex>::new(map_config.e_seed as u32);
+    let fbm_main = Fbm::<OpenSimplex>::new(map_config.e_seed as u32)
         .set_octaves(map_config.octaves as usize)
         .set_frequency(map_config.frequency)
         .set_persistence(map_config.persistance)
         .set_lacunarity(map_config.lacunarity);
-    let elevation_noise: Blend<f64, _, _, _, 2> = Blend::new(open_simplex, ridged, fbm);
-    let moisture_noise = OpenSimplex::new(map_config.moisture_seed as u32);
+    let fbm_warp = Fbm::<OpenSimplex>::new(map_config.e_seed as u32)
+        .set_octaves(map_config.octaves as usize)
+        .set_frequency(map_config.frequency)
+        .set_persistence(map_config.persistance)
+        .set_lacunarity(map_config.lacunarity);    
+    let e_noise: Blend<f64, _, _, _, 2> = Blend::new(open_simplex, ridged, fbm_main);
+    let m_noise = OpenSimplex::new(map_config.m_seed as u32);
+    let temp_noise = OpenSimplex::new((map_config.m_seed as u32).wrapping_add(12345)); // different seed for temperature
 
     for x in 0..CHUNK_SIZE.x {        
         for y in 0..CHUNK_SIZE.y {            
             let tile_pos = TilePos { x, y };
-            let nx: f64 = (chunk_pos.x as f64 * CHUNK_SIZE.x as f64 + x as f64) / OVERWORLD_SIZE_WIDTH as f64 - 0.5;
-            let ny: f64 = (chunk_pos.y as f64 * CHUNK_SIZE.y as f64 + y as f64) / OVERWORLD_SIZE_HEIGHT as f64 - 0.5;
-            let mut elevation_value = elevation_noise.get([nx, ny]);
-            
-            elevation_value += 1.0 * elevation_noise.get([1.0 * nx, 1.0 * ny]);
-            elevation_value += 0.5 * elevation_noise.get([2.0 * nx, 2.0 * ny]);
-            elevation_value += 0.25 * elevation_noise.get([4.0 * nx, 4.0 * ny]);
-            elevation_value += 0.13 * elevation_noise.get([8.0 * nx, 8.0 * ny]);
-            elevation_value += 0.06 * elevation_noise.get([16.0 * nx, 16.0 * ny]);
-            elevation_value += 0.03 * elevation_noise.get([32.0 * nx, 32.0 * ny]);
-            elevation_value /= 1.0 + 0.25 + 0.5 + 0.13 + 0.06 + 0.03;
-            // Normalize the elevation value to be between 0 and 1
-            elevation_value = (elevation_value + 1.0) / 2.0;
-            elevation_value = elevation_value.clamp(0.0, 1.0);
-            elevation_value = elevation_value.powf(map_config.pow_factor);
-            
-            let mut moisture_value = moisture_noise.get([nx, ny]);
+            let world_x = chunk_pos.x as f64 * CHUNK_SIZE.x as f64 + x as f64;
+            let world_y = chunk_pos.y as f64 * CHUNK_SIZE.y as f64 + y as f64;
+            let nx: f64 = world_x / OVERWORLD_SIZE_WIDTH as f64 - 0.5;
+            let ny: f64 = world_y / OVERWORLD_SIZE_HEIGHT as f64 - 0.5;
 
-            // moisture_value += 1.0 * moisture_noise.get([1.0 * nx, 1.0 * ny]);
-            // moisture_value += 0.5 * moisture_noise.get([2.0 * nx, 2.0 * ny]);
-            // moisture_value += 0.25 * moisture_noise.get([4.0 * nx, 4.0 * ny]);
-            // moisture_value += 0.13 * moisture_noise.get([8.0 * nx, 8.0 * ny]);
-            // moisture_value += 0.06 * moisture_noise.get([16.0 * nx, 16.0 * ny]);
-            // moisture_value += 0.03 * moisture_noise.get([32.0 * nx, 32.0 * ny]);
-            // moisture_value /= 1.0 + 0.25 + 0.5 + 0.13 + 0.06 + 0.03;
-            // // Normalize the moisture value to be between 0 and 1
-            // let moisture_value = (moisture_value + 1.0) / 2.0;  
-            // let moisture_value = moisture_value.clamp(0.0, 1.0);
+            // Domain-warp for more organic terrain
+            let warp_amp = 0.08; // tweakable
+            let warp = fbm_warp.get([nx * 2.0, ny * 2.0]) * warp_amp;
+            let mut e_value = e_noise.get([nx + warp, ny + warp]);
 
-            let texture_index = biome(elevation_value, moisture_value);
+            // multi-scale detail (kept but normalized)
+            e_value += 0.5 * e_noise.get([2.0 * (nx + warp), 2.0 * (ny + warp)]);
+            e_value += 0.25 * e_noise.get([4.0 * (nx + warp), 4.0 * (ny + warp)]);
+            e_value /= 1.0 + 0.5 + 0.25;
+            e_value = normalize_noise(e_value);
+            e_value = e_value.powf(map_config.pow_factor);
+
+            // Moisture: base noise, biased by elevation (lowlands wetter) and some temperature influence
+            let mut m_value = normalize_noise(m_noise.get([nx * 1.5, ny * 1.5]));
+            m_value = m_value * 0.7 + (1.0 - e_value) * 0.3; // mountains drier
+
+            // Temperature: latitude gradient + noise + elevation penalty (higher = colder)
+            let lat = 1.0 - (ny + 0.5).abs() * 1.0; // center is warm, poles cold
+            let mut t_value = lat.clamp(0.0, 1.0);
+            t_value += normalize_noise(temp_noise.get([nx * 2.0, ny * 2.0])) * 0.12;
+            t_value -= e_value * 0.5; // elevation cools
+            let t_value = t_value.clamp(0.0, 1.0);
+
+            let texture_index = biome(e_value, m_value, t_value);
 
             let tile_entity = commands
                 .spawn(TileBundle {
@@ -307,104 +330,43 @@ fn spawn_chunk(
     });
 }
 
+fn normalize_noise(v: f64) -> f64 {
+    ((v + 1.0) / 2.0).clamp(0.0, 1.0)
+}
+
+fn smoothstep(edge0: f64, edge1: f64, x: f64) -> f64 {
+    let t = ((x - edge0) / (edge1 - edge0)).clamp(0.0, 1.0);
+    t * t * (3.0 - 2.0 * t)
+}
+
 ///
-/// Simple function to determine the biome depending on elevation and moisture.
+/// Simple function to determine the biome depending on elevation (e) and moisture (m).
 /// 
-fn biome(elevation: f64, moisture: f64) -> u32 {
-    //println!("BIOME: elevation = {}, moisture = {}", elevation, moisture);
-    // if elevation < 0.3 {
-    //     return GroundTiles::DarkDeepWater as u32;
-    // } else if elevation >= 0.3 && elevation < 0.35 {
-    //     return GroundTiles::LightShallowWater as u32;
-    // } else if elevation >= 0.35 && elevation < 0.55 {
-    //     return GroundTiles::LightDirt as u32;
-    // }
+fn biome(e: f64, m: f64, t: f64) -> u32 {
+    // soften water/coast/mountain thresholds
+    let water_f = smoothstep(0.18, 0.26, e);
+    if water_f > 0.66 { return GroundTiles::DarkShallowWater as u32; }
+    if water_f > 0.33 { return GroundTiles::MediumShallowWater as u32; }
+    if water_f > 0.0  { return GroundTiles::LightShallowWater as u32; }
 
+    // gentle beach band
+    let beach_f = smoothstep(0.26, 0.30, e);
+    if beach_f > 0.5 && m < 0.45 { return GroundTiles::LightDirt as u32; }
 
-    if elevation < 0.3 {
-        return GroundTiles::DarkShallowWater as u32;
-    } else if elevation < 0.35 {
-        return GroundTiles::MediumShallowWater as u32;
-    } else if elevation < 0.4 {
-        return GroundTiles::LightShallowWater as u32;
+    // mountains with softened snowline
+    let mountain_f = smoothstep(0.80, 0.86, e);
+    if mountain_f > 0.8 {
+        if t < 0.3 { return GroundTiles::DarkSnowyMountain as u32; }
+        return GroundTiles::LightRockSnowyMountain as u32;
     }
 
-    if elevation < 0.45 {
-        return GroundTiles::LightDirt as u32;
-    }
-
-    if elevation < 0.5 {
-        if moisture < 0.6 {
-            return GroundTiles::LightGrass as u32;
-        } else {
-            return GroundTiles::MediumGrass as u32;
-        }
-    }
-
-    if elevation > 0.6 {
-        if moisture < 0.2 {
-            return GroundTiles::LightTemperateDesert as u32;
-        } else if moisture < 0.33 {
-            return GroundTiles::LightGreyCobble as u32;
-        } else {
-            return GroundTiles::BrightPineForest as u32;
-        }
-    }
-
-    if elevation > 0.75 {
-        if moisture < 0.2 {
-            return GroundTiles::LightSandyMountain as u32;
-        } else if moisture < 0.33 {
-            return GroundTiles::LightRockSnowyMountain as u32;
-        } else {
-            return GroundTiles::DarkSnowyMountain as u32;
-        }
-    }
-    
-    
-    // if elevation > 0.9 {
-    //     if moisture < 0.1 {
-    //         return GroundTiles::LightRockyDirt as u32;
-    //     } // scorched
-    //     if moisture < 0.2 {
-    //         return GroundTiles::LightDirt as u32;
-    //     } // bare
-    //     // if moisture < 0.5 {
-    //     //     return GroundTiles::LightSwamp as u32;
-    //     // } //tundra
-    //     // return GroundTiles::MediumFrozenPineForest as u32;
-    // }
-    
-
-    
-    // if elevation > 0.3 {
-    //     // if moisture < 0.16 {
-    //     //     return GroundTiles::LightTemperateDesert as u32;
-    //     // } // temperate_desert
-    //     if moisture < 0.50 {
-    //         return GroundTiles::MediumGrass as u32;
-    //     } // grassland
-    //     // if moisture < 0.83 {
-    //     // //     return GroundTiles::BrightDeciduousForest as u32;
-    //     // } //temperate_deciduous_forest
-    //     // return GroundTiles::BrightLushForest as u32; // temperate rain forest
-    // }
-
-    // if moisture < 0.16 {
-    //     return GroundTiles::LightDirt as u32;
-    // } // subtropical desert
-    // // if moisture < 0.16 {
-    // //     return GroundTiles::LightSandDesert as u32;
-    // // } // subtropical desert
-    // if moisture < 0.33 {
-    //     return GroundTiles::LightGrass as u32;
-    // } // grassland
-    // // if moisture < 0.66 {
-    // //     return GroundTiles::DarkDeciduousForest as u32;
-    // // } //tropical seasonal forest
-    // 
-    
-    GroundTiles::LightGrass as u32 // tropical rain forest
+    // Biomes based on moisture & temperature (unchanged logic, smoothed where helpful)
+    if t < 0.35 && m > 0.45 { return GroundTiles::BrightPineForest as u32; }
+    if m < 0.15 && t > 0.6 { return GroundTiles::LightSandyMountain as u32; }
+    if m > 0.7 { return GroundTiles::BrightLushForest as u32; }
+    if m > 0.45 { return GroundTiles::BrightDeciduousForest as u32; }
+    if e > 0.5 { return GroundTiles::MediumGrass as u32; }
+    GroundTiles::LightGrass as u32
 }
 
 ///
