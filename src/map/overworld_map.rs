@@ -44,10 +44,12 @@ impl Default for OverWorldMapConfig {
             m_seed: rng.random(),
             frequency: 2.50,
             octaves: 5.0,
-            lacunarity: 0.7,
-            persistance: 2.0,
+            // more typical values: lacunarity > 1, persistence < 1
+            lacunarity: 2.0,
+            persistance: 0.5,
             amplitude: 0.5,
-            pow_factor: 1.75,
+            // avoid aggressively compressing elevation distribution
+            pow_factor: 1.0,
         }
     }
 }
@@ -68,7 +70,7 @@ impl Plugin for OverWorldMapPlugin {
             .init_resource::<OverWorldMapConfig>()
             .register_type::<OverWorldMapConfig>()
             .add_systems(Update, spawn_chunk_around_camera)
-            .add_systems(Update, despawn_outofrange_chunks)
+            //.add_systems(Update, despawn_outofrange_chunks)
             //.add_systems(Update, camera_movement)
             .add_systems(Update, reset_map.run_if(in_state(GameState::DirtyMap)))
             .add_systems(EguiPrimaryContextPass, inspector_ui)
@@ -263,6 +265,12 @@ fn spawn_chunk(
     let m_noise = OpenSimplex::new(map_config.m_seed as u32);
     let temp_noise = OpenSimplex::new((map_config.m_seed as u32).wrapping_add(12345)); // different seed for temperature
 
+    // gather simple stats to help diagnose elevation distribution
+    let mut e_min = f64::INFINITY;
+    let mut e_max = f64::NEG_INFINITY;
+    let mut e_sum = 0.0_f64;
+    let mut e_count = 0usize;
+
     for x in 0..CHUNK_SIZE.x {        
         for y in 0..CHUNK_SIZE.y {            
             let tile_pos = TilePos { x, y };
@@ -282,6 +290,14 @@ fn spawn_chunk(
             e_value /= 1.0 + 0.5 + 0.25;
             e_value = normalize_noise(e_value);
             e_value = e_value.powf(map_config.pow_factor);
+
+            // update stats
+            if e_value.is_finite() {
+                if e_value < e_min { e_min = e_value; }
+                if e_value > e_max { e_max = e_value; }
+                e_sum += e_value;
+                e_count += 1;
+            }
 
             // Moisture: base noise, biased by elevation (lowlands wetter) and some temperature influence
             let mut m_value = normalize_noise(m_noise.get([nx * 1.5, ny * 1.5]));
@@ -328,6 +344,14 @@ fn spawn_chunk(
         },
         ..Default::default()
     });
+
+    // report simple elevation stats for this chunk
+    if e_count > 0 {
+        let avg = e_sum / e_count as f64;
+        info!("Chunk {:?} elevation stats: min={:.4}, max={:.4}, avg={:.4}", chunk_pos, e_min, e_max, avg);
+    } else {
+        info!("Chunk {:?} elevation stats: no samples", chunk_pos);
+    }
 }
 
 fn normalize_noise(v: f64) -> f64 {
@@ -344,13 +368,15 @@ fn smoothstep(edge0: f64, edge1: f64, x: f64) -> f64 {
 /// 
 fn biome(e: f64, m: f64, t: f64) -> u32 {
     // soften water/coast/mountain thresholds
-    let water_f = smoothstep(0.18, 0.26, e);
+    // low elevation => more water: choose edges matching current elevation distribution
+    let water_f = 1.0 - smoothstep(0.42, 0.50, e);
     if water_f > 0.66 { return GroundTiles::DarkShallowWater as u32; }
     if water_f > 0.33 { return GroundTiles::MediumShallowWater as u32; }
     if water_f > 0.0  { return GroundTiles::LightShallowWater as u32; }
 
     // gentle beach band
-    let beach_f = smoothstep(0.26, 0.30, e);
+    // beach sits just above the water band
+    let beach_f = 1.0 - smoothstep(0.50, 0.56, e);
     if beach_f > 0.5 && m < 0.45 { return GroundTiles::LightDirt as u32; }
 
     // mountains with softened snowline
