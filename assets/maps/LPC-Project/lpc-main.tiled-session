@@ -1,0 +1,20 @@
+{
+    "Map/SizeTest": {
+        "height": 4300,
+        "width": 2
+    },
+    "activeFile": "",
+    "expandedProjectPaths": [
+    ],
+    "fileStates": {
+    },
+    "last.imagePath": "C:/Users/bergeronl/Documents/programmation/assets/lpc-terrains/lpc-terrains",
+    "map.lastUsedFormat": "tmx",
+    "openFiles": [
+    ],
+    "project": "lpc-main.tiled-project",
+    "recentFiles": [
+    ],
+    "tileset.lastUsedFormat": "tsx",
+    "tileset.useTransparentColor": true
+}

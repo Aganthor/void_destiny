@@ -3,7 +3,7 @@
         "height": 4300,
         "width": 2
     },
-    "activeFile": "overworld_map.tmx",
+    "activeFile": "tilesets/FDR_Overworld_Water.tsx",
     "expandedProjectPaths": [
         "tilesets",
         "."
@@ -16,9 +16,9 @@
         },
         "overworld_map.tmx": {
             "scale": 3,
-            "selectedLayer": 0,
+            "selectedLayer": 2,
             "viewCenter": {
-                "x": 345.3333333333333,
+                "x": 345.5,
                 "y": 231
             }
         },
@@ -32,7 +32,7 @@
         },
         "tilesets/FDR_Overworld_Water.tsx": {
             "scaleInDock": 1,
-            "scaleInEditor": 3
+            "scaleInEditor": 2
         }
     },
     "last.imagePath": "C:/Users/bergeronl/Documents/programmation/rust/void_destiny/assets/tiled_map_assets/tilesets",
