@@ -25,6 +25,7 @@ mod map;
 use crate::map::{
     overworld_map::OverWorldMapPlugin,
     world_map::WorldMapPlugin,
+    world_gen_island::WorldGenIslandPlugin,
 };
 
 mod events;
@@ -51,7 +52,8 @@ fn main() {
         .init_state::<GameState>()
         .add_plugins(PlayerPlugin)
         //.add_plugins(WorldMapPlugin)
-        .add_plugins(OverWorldMapPlugin)
+        //.add_plugins(OverWorldMapPlugin)
+        .add_plugins(WorldGenIslandPlugin)
         .run();
 }
 
