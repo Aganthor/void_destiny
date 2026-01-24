@@ -15,7 +15,7 @@ impl Plugin for WorldGenIslandPlugin {
         app
             .add_plugins(TilemapPlugin)
             .add_systems(Startup, startup)
-            .add_systems(Update, spawn_chunk)
+            .add_systems(Startup, spawn_chunk)
             // .add_systems(Update, spawn_chunk_around_camera)
             // .add_systems(Update, despawn_outofrange_chunks)
             .add_systems(Update, camera_movement);
@@ -32,8 +32,8 @@ const RENDER_CHUNK_SIZE: UVec2 = UVec2 {
 };
 
 // Configuration
-const WIDTH: u32 = 800;
-const HEIGHT: u32 = 800;
+const WIDTH: u32 = TILE_SIZE.x as u32 * 20;
+const HEIGHT: u32 = TILE_SIZE.y as u32 * 20;
 const SEALEVEL: f64 = 0.15;
 const RIVER_THRESHOLD: f64 = 20.0; // Higher = fewer, thicker rivers
 const NUM_DROPS: usize = 25000;
@@ -155,7 +155,8 @@ fn spawn_chunk(
     // let texture_handle = asset_server.load("tiles/overworld_tiles.png");
     let texture_handle = asset_server.load("tiles/grounds_tiles.png");
     let tilemap_entity = commands.spawn_empty().id();
-    let mut tile_storage = TileStorage::empty(CHUNK_SIZE.into());
+    let tile_map_size = TilemapSize::new(WIDTH, HEIGHT);
+    let mut tile_storage = TileStorage::empty(tile_map_size.into());
 
     // 1. Setup Noise Generators
     let mut rng = rand::rng();
@@ -212,6 +213,7 @@ fn spawn_chunk(
             moisture_map[idx] = (m * 0.6 + height_factor * 0.4).clamp(0.0, 1.0);
         }
     }   
+    info!("Elevation and Moisture maps generated.");
 
     // 4. Final Rendering
     for y in 0..HEIGHT {
@@ -292,7 +294,7 @@ fn spawn_chunk(
 
     commands.entity(tilemap_entity).insert(TilemapBundle {
         grid_size: TILE_SIZE.into(),
-        size: CHUNK_SIZE.into(),
+        size: tile_map_size,
         storage: tile_storage,
         texture: TilemapTexture::Single(texture_handle),
         tile_size: TILE_SIZE,
