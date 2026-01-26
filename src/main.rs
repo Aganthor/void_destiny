@@ -50,7 +50,7 @@ fn main() {
         .set(ImagePlugin::default_nearest()),
         )
         .init_state::<GameState>()
-        .add_plugins(PlayerPlugin)
+        //.add_plugins(PlayerPlugin)
         //.add_plugins(WorldMapPlugin)
         //.add_plugins(OverWorldMapPlugin)
         .add_plugins(WorldGenIslandPlugin)
