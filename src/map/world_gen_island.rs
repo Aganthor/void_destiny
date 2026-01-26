@@ -308,47 +308,26 @@ fn spawn_chunk(
 ///
 /// Simple function to determine the biome depending on elevation and moisture.
 /// 
-fn biome(elevation: f64, moisture: f64) -> u32 {
- 
-    if elevation < 0.3 {
-        return GroundTiles::DarkShallowWater as u32;
-    } else if elevation < 0.35 {
-        return GroundTiles::MediumShallowWater as u32;
-    } else if elevation < 0.4 {
-        return GroundTiles::LightShallowWater as u32;
+fn biome(e: f64, m: f64) -> u32 {
+    if e < SEALEVEL {
+        return if e < SEALEVEL - 0.1 { Rgb([20, 50, 100]) } else { Rgb([40, 90, 160]) };
     }
 
-    if elevation < 0.45 {
-        return GroundTiles::LightDirt as u32;
+    if e < SEALEVEL + 0.03 { return Rgb([230, 220, 160]); } // Beach
+
+    if e > 0.45 {
+        return if m > 0.4 { Rgb([255, 255, 255]) } else { Rgb([100, 100, 100]) }; // Snow vs Rock
     }
 
-    if elevation < 0.5 {
-        if moisture < 0.6 {
-            return GroundTiles::LightGrass as u32;
-        } else {
-            return GroundTiles::MediumGrass as u32;
-        }
+    if e > 0.4 {
+        if m > 0.6 { return Rgb([34, 139, 34]); }    // Forest
+        if m > 0.3 { return Rgb([100, 150, 70]); }   // Shrubland
+        return Rgb([180, 160, 120]);                 // Tundra/Barren
     }
 
-    if elevation > 0.6 {
-        if moisture < 0.2 {
-            return GroundTiles::LightTemperateDesert as u32;
-        } else if moisture < 0.33 {
-            return GroundTiles::LightGreyCobble as u32;
-        } else {
-            return GroundTiles::BrightPineForest as u32;
-        }
-    }
-
-    if elevation > 0.75 {
-        if moisture < 0.2 {
-            return GroundTiles::LightSandyMountain as u32;
-        } else if moisture < 0.33 {
-            return GroundTiles::LightRockSnowyMountain as u32;
-        } else {
-            return GroundTiles::DarkSnowyMountain as u32;
-        }
-    }
-    
-    GroundTiles::LightGrass as u32 // tropical rain forest
+    // Lowlands
+    if m > 0.7 { return Rgb([0, 80, 40]); }      // Jungle
+    if m > 0.4 { return Rgb([60, 160, 60]); }    // Grassland
+    if m > 0.15 { return Rgb([160, 180, 90]); }  // Savannah
+    Rgb([210, 180, 110])                         // Desertm
 }
