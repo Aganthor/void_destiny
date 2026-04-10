@@ -6,10 +6,10 @@
     "activeFile": "begin_game_spawn_cave.tmx",
     "automapping.whileDrawing": true,
     "expandedProjectPaths": [
+        "rules",
         ".",
         "tilesets",
-        "map_rules",
-        "rules"
+        "map_rules"
     ],
     "file.lastUsedOpenFilter": "All Files (*)",
     "fileStates": {
@@ -21,27 +21,27 @@
             "scaleInEditor": 1
         },
         "begin_game_spawn_cave.tmx": {
-            "scale": 4,
-            "selectedLayer": 2,
+            "scale": 1,
+            "selectedLayer": 0,
             "viewCenter": {
-                "x": 840.125,
-                "y": 446
+                "x": 487.5,
+                "y": 250
             }
         },
         "map_rules/cave_rules.tmx": {
             "scale": 3,
             "selectedLayer": 0,
             "viewCenter": {
-                "x": 179.49999999999997,
-                "y": 65.99999999999999
+                "x": 512.1666666666666,
+                "y": 256.16666666666663
             }
         },
         "overworld_map.tmx": {
             "scale": 1,
             "selectedLayer": 0,
             "viewCenter": {
-                "x": 518.5,
-                "y": 288
+                "x": 512.5,
+                "y": 255.5
             }
         },
         "rules/cave_rules.tmx": {
@@ -71,6 +71,11 @@
         }
     },
     "last.imagePath": "C:/Users/bergeronl/Documents/programmation/rust/void_destiny/assets/tiled_map_assets/tilesets",
+    "last.worldFilePath": "C:/Users/bergeronl/Documents/programmation/rust/void_destiny/assets/tiled_map_assets",
+    "loadedWorlds": [
+        "C:/Users/bergeronl/Documents/programmation/rust/void_destiny/assets/tiled_map_assets/void_destiny_world.world",
+        "C:/Users/bergeronl/Documents/programmation/rust/void_destiny/assets/tiled_map_assets/void_destiny_world.world"
+    ],
     "map.height": 32,
     "map.lastUsedFormat": "tmx",
     "map.tileHeight": 16,
@@ -78,9 +83,6 @@
     "map.width": 64,
     "openFiles": [
         "overworld_map.tmx",
-        "tilesets/FDR_Overworld_Ground.tsx",
-        "tilesets/FDR_Overworld.tsx",
-        "tilesets/FDR_Overworld_Water.tsx",
         "begin_game_spawn_cave.tmx",
         "tilesets/FDR_Caves.tsx",
         "map_rules/cave_rules.tmx"
@@ -88,12 +90,12 @@
     "project": "void-destiny.tiled-project",
     "recentFiles": [
         "overworld_map.tmx",
-        "tilesets/FDR_Overworld_Ground.tsx",
-        "tilesets/FDR_Overworld.tsx",
-        "tilesets/FDR_Overworld_Water.tsx",
         "map_rules/cave_rules.tmx",
         "tilesets/FDR_Caves.tsx",
         "begin_game_spawn_cave.tmx",
+        "tilesets/FDR_Overworld_Water.tsx",
+        "tilesets/FDR_Overworld.tsx",
+        "tilesets/FDR_Overworld_Ground.tsx",
         "rules/cave_rules.tmx",
         "C:/Users/bergeronl/Documents/programmation/assets/lpc-terrains/lpc-terrains/terrain-v7.tsx"
     ],
