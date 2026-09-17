@@ -312,24 +312,24 @@ fn spawn_chunk(
 /// 
 fn biome(e: f64, m: f64) -> u32 {
     if e < SEALEVEL {
-        return if e < SEALEVEL - 0.1 { Rgb([20, 50, 100]) } else { Rgb([40, 90, 160]) };
+        return if e < SEALEVEL - 0.1 { GroundTiles::DarkShallowWater as u32 } else { GroundTiles::MediumShallowWater as u32 };
     }
 
-    if e < SEALEVEL + 0.03 { return Rgb([230, 220, 160]); } // Beach
+    if e < SEALEVEL + 0.03 { return GroundTiles::LightShallowWater as u32 }; // Beach
 
     if e > 0.45 {
-        return if m > 0.4 { Rgb([255, 255, 255]) } else { Rgb([100, 100, 100]) }; // Snow vs Rock
+        return if m > 0.4 { GroundTiles::LightFrozenField as u32 } else { GroundTiles::DarkGreyRock as u32 }; // Snow vs Rock
     }
 
     if e > 0.4 {
-        if m > 0.6 { return Rgb([34, 139, 34]); }    // Forest
-        if m > 0.3 { return Rgb([100, 150, 70]); }   // Shrubland
-        return Rgb([180, 160, 120]);                 // Tundra/Barren
+        if m > 0.6 { return GroundTiles::DarkLushForest as u32 };    // Forest
+        if m > 0.3 { return GroundTiles::LightGreenSwamp as u32 };   // Shrubland
+        return GroundTiles::DarkFrozenField as u32;                 // Tundra/Barren
     }
 
     // Lowlands
-    if m > 0.7 { return Rgb([0, 80, 40]); }      // Jungle
-    if m > 0.4 { return Rgb([60, 160, 60]); }    // Grassland
-    if m > 0.15 { return Rgb([160, 180, 90]); }  // Savannah
-    Rgb([210, 180, 110])                         // Desertm
+    if m > 0.7 { return GroundTiles::MediumSwampForest as u32 };      // Jungle
+    if m > 0.4 { return GroundTiles::LightGrass as u32 };    // Grassland
+    if m > 0.15 { return GroundTiles::MediumGrass as u32 };  // Savannah
+    return GroundTiles::DarkScorchedDesert as u32;                         // Desert
 }
