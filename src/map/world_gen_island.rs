@@ -1,19 +1,17 @@
-use bevy::{math::Vec3Swizzles, prelude::*, platform::collections::HashSet};
-use bevy_ecs_tilemap::prelude::*;
+use bevy::{math::Vec3Swizzles, platform::collections::HashSet, prelude::*};
 use bevy_ecs_tilemap::helpers::*;
-use noise::{Fbm, NoiseFn, Perlin, OpenSimplex};
+use bevy_ecs_tilemap::prelude::*;
+use noise::{Fbm, NoiseFn, OpenSimplex, Perlin};
 use rand::Rng;
 
 use crate::tile_type::GroundTiles;
-
 
 #[derive(Default)]
 pub struct WorldGenIslandPlugin;
 
 impl Plugin for WorldGenIslandPlugin {
     fn build(&self, app: &mut App) {
-        app
-            .add_plugins(TilemapPlugin)
+        app.add_plugins(TilemapPlugin)
             .add_systems(Startup, startup)
             .add_systems(Startup, spawn_chunk)
             // .add_systems(Update, spawn_chunk_around_camera)
@@ -37,7 +35,6 @@ const HEIGHT: u32 = TILE_SIZE.y as u32 * 20;
 const SEALEVEL: f64 = 0.15;
 const RIVER_THRESHOLD: f64 = 20.0; // Higher = fewer, thicker rivers
 const NUM_DROPS: usize = 25000;
-
 
 fn startup(mut commands: Commands) {
     commands.spawn(Camera2d::default());
@@ -88,7 +85,7 @@ fn camera_movement(
         // Important! We need to restore the Z values when moving the camera around.
         // Bevy has a specific camera setup and this can mess with how our layers are shown.
         transform.translation.z = z;
-    }    
+    }
 }
 
 fn camera_pos_to_chunk_pos(camera_pos: &Vec2) -> IVec2 {
@@ -144,14 +141,10 @@ fn camera_pos_to_chunk_pos(camera_pos: &Vec2) -> IVec2 {
 //     }
 // }
 
-
 ///
 /// This function spawns a chunk of the overworld map.
-/// 
-fn spawn_chunk(
-    mut commands: Commands, 
-    asset_server: Res<AssetServer>,
-) {
+///
+fn spawn_chunk(mut commands: Commands, asset_server: Res<AssetServer>) {
     // let texture_handle = asset_server.load("tiles/overworld_tiles.png");
     let texture_handle = asset_server.load("tiles/grounds_tiles.png");
     let tilemap_entity = commands.spawn_empty().id();
@@ -160,11 +153,11 @@ fn spawn_chunk(
 
     // 1. Setup Noise Generators
     let mut rng = rand::rng();
-    let seed = rng.random();
-    let island_scale = 1.3; // Larger = bigger island    
+    let seed = 19292992; //rng.random();
+    let island_scale = 1.3; // Larger = bigger island
     let elev_gen = Fbm::<Perlin>::new(seed);
-    let moist_gen = Fbm::<Perlin>::new(seed + 1);
-    let warp_gen = Fbm::<Perlin>::new(seed + 2);
+    let moist_gen = Fbm::<Perlin>::new(seed.wrapping_add(1));
+    let warp_gen = Fbm::<Perlin>::new(seed.wrapping_add(2));
 
     // 2. Pre-calculate Elevation and Moisture Maps
     // We store these in Vectors so the river simulation can access them easily.
@@ -183,37 +176,47 @@ fn spawn_chunk(
 
             // Elevation with Masking
             // 1. Higher frequency for more crags
-            let freq = 3.5; 
-            let mut e = (elev_gen.get([nx * freq, ny * freq]) + 1.0) / 2.0;
+            let freq = 3.5;
+            //let mut e = (elev_gen.get([nx * freq, ny * freq]) + 1.0) / 2.0;
+            let e = ((elev_gen.get([nx * freq, ny * freq]) + 1.0) / 2.0).clamp(0.0, 1.0);
+            let e = e.powf(1.3); // was 2.5; raise for less land and sharper peaks
 
             // 2. REDISTRIBUTION: This is the "Mountain Maker"
             // Squaring or cubing the value makes the peaks much sharper.
-            e = e.powf(2.5); 
+            //e = e.powf(2.5);
 
-            // 3. BETTER MASK: 
-            // We calculate a distance-based shelf. 
+            // 3. BETTER MASK:
+            // We calculate a distance-based shelf.
             // Instead of simple subtraction, we use this to 'force' the edges down
             // while leaving the center mostly untouched.
             // Compute distance-based mask from the unscaled coordinates so
             // the island always falls off to ocean at the image edges.
             let d = (nx0 * nx0 + ny0 * ny0).sqrt();
-            let mask = (1.0 - d.powf(2.0)).clamp(0.0, 1.0);
+            //let mask = (1.0 - d.powf(2.0)).clamp(0.0, 1.0);
+            let island_radius = 0.9; // larger = bigger island
+            let mask = (1.0 - (d / island_radius).powi(2)).clamp(0.0, 1.0);
 
             // Multiply elevation by mask so edges are 0, but center keeps its peak height.
-            let final_elev = e * mask; 
+            let final_elev = e * mask;
             elevation_map[idx] = final_elev;
 
             // Warped Moisture
             let qx = warp_gen.get([nx * 2.0, ny * 2.0]) * 0.4;
             let qy = warp_gen.get([nx * 2.0 + 5.2, ny * 2.0 + 1.3]) * 0.4;
             let mut m = (moist_gen.get([nx + qx, ny + qy]) + 1.0) / 2.0;
-            
+
             // Terrain coupling: Lower areas near water are naturally wetter
             let height_factor = 1.0 - elevation_map[idx];
             moisture_map[idx] = (m * 0.6 + height_factor * 0.4).clamp(0.0, 1.0);
         }
-    }   
+    }
     info!("Elevation and Moisture maps generated.");
+    let max = elevation_map.iter().copied().fold(f64::MIN, f64::max);
+    let land = elevation_map.iter().filter(|&&e| e >= 0.15).count();
+    info!(
+        "max elevation: {max:.3}, land tiles: {land}/{}",
+        elevation_map.len()
+    );
 
     // 4. Final Rendering
     for y in 0..HEIGHT {
@@ -236,15 +239,15 @@ fn spawn_chunk(
             commands.entity(tilemap_entity).add_child(tile_entity);
             tile_storage.set(&tile_pos, tile_entity);
         }
-    }     
+    }
 
-    // for x in 0..CHUNK_SIZE.x {        
-    //     for y in 0..CHUNK_SIZE.y {            
+    // for x in 0..CHUNK_SIZE.x {
+    //     for y in 0..CHUNK_SIZE.y {
     //         let tile_pos = TilePos { x, y };
     //         let nx: f64 = (chunk_pos.x as f64 * CHUNK_SIZE.x as f64 + x as f64) / OVERWORLD_SIZE_WIDTH as f64 - 0.5;
     //         let ny: f64 = (chunk_pos.y as f64 * CHUNK_SIZE.y as f64 + y as f64) / OVERWORLD_SIZE_HEIGHT as f64 - 0.5;
     //         let mut elevation_value = elevation_noise.get([nx, ny]);
-            
+
     //         elevation_value += 1.0 * elevation_noise.get([1.0 * nx, 1.0 * ny]);
     //         elevation_value += 0.5 * elevation_noise.get([2.0 * nx, 2.0 * ny]);
     //         elevation_value += 0.25 * elevation_noise.get([4.0 * nx, 4.0 * ny]);
@@ -256,7 +259,7 @@ fn spawn_chunk(
     //         elevation_value = (elevation_value + 1.0) / 2.0;
     //         elevation_value = elevation_value.clamp(0.0, 1.0);
     //         elevation_value = elevation_value.powf(map_config.pow_factor);
-            
+
     //         let mut moisture_value = moisture_noise.get([nx, ny]);
 
     //         // moisture_value += 1.0 * moisture_noise.get([1.0 * nx, 1.0 * ny]);
@@ -267,7 +270,7 @@ fn spawn_chunk(
     //         // moisture_value += 0.03 * moisture_noise.get([32.0 * nx, 32.0 * ny]);
     //         // moisture_value /= 1.0 + 0.25 + 0.5 + 0.13 + 0.06 + 0.03;
     //         // // Normalize the moisture value to be between 0 and 1
-    //         // let moisture_value = (moisture_value + 1.0) / 2.0;  
+    //         // let moisture_value = (moisture_value + 1.0) / 2.0;
     //         // let moisture_value = moisture_value.clamp(0.0, 1.0);
 
     //         let texture_index = biome(elevation_value, moisture_value);
@@ -303,33 +306,58 @@ fn spawn_chunk(
             render_chunk_size: RENDER_CHUNK_SIZE,
             ..Default::default()
         },
+        anchor: TilemapAnchor::Center,
         ..Default::default()
     });
 }
 
 ///
 /// Simple function to determine the biome depending on elevation and moisture.
-/// 
+///
 fn biome(e: f64, m: f64) -> u32 {
     if e < SEALEVEL {
-        return if e < SEALEVEL - 0.1 { GroundTiles::DarkShallowWater as u32 } else { GroundTiles::MediumShallowWater as u32 };
+        return if e < SEALEVEL - 0.1 {
+            GroundTiles::DarkShallowWater as u32
+        } else {
+            GroundTiles::MediumShallowWater as u32
+        };
     }
 
-    if e < SEALEVEL + 0.03 { return GroundTiles::LightShallowWater as u32 }; // Beach
+    if e < SEALEVEL + 0.03 {
+        return GroundTiles::LightShallowWater as u32;
+    }; // Beach
 
     if e > 0.45 {
-        return if m > 0.4 { GroundTiles::LightFrozenField as u32 } else { GroundTiles::DarkGreyRock as u32 }; // Snow vs Rock
+        return if m > 0.4 {
+            GroundTiles::LightFrozenField as u32
+        } else {
+            GroundTiles::DarkGreyRock as u32
+        }; // Snow vs Rock
     }
 
-    if e > 0.4 {
-        if m > 0.6 { return GroundTiles::DarkLushForest as u32 };    // Forest
-        if m > 0.3 { return GroundTiles::LightGreenSwamp as u32 };   // Shrubland
-        return GroundTiles::DarkFrozenField as u32;                 // Tundra/Barren
+    if e > 0.4 && e < 0.7 {
+        if m > 0.6 {
+            return GroundTiles::DarkLushForest as u32;
+        }; // Forest
+        if m > 0.3 {
+            return GroundTiles::MediumSwamp as u32;
+        }; // Shrubland
+        return GroundTiles::DarkFrozenField as u32; // Tundra/Barren
+    }
+
+    if e > 0.7 {
+        return GroundTiles::SnowyPeak as u32;
     }
 
     // Lowlands
-    if m > 0.7 { return GroundTiles::MediumSwampForest as u32 };      // Jungle
-    if m > 0.4 { return GroundTiles::LightGrass as u32 };    // Grassland
-    if m > 0.15 { return GroundTiles::MediumGrass as u32 };  // Savannah
-    return GroundTiles::DarkScorchedDesert as u32;                         // Desert
+    if m > 0.7 {
+        return GroundTiles::MediumDirt as u32;
+    }; // Jungle
+    if m > 0.4 {
+        return GroundTiles::LightGrass as u32;
+    }; // Grassland
+    if m > 0.15 {
+        return GroundTiles::MediumGrass as u32;
+    }; // Savannah
+    return GroundTiles::MediumDirt as u32; // Desert
 }

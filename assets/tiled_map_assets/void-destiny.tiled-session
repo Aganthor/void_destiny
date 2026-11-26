@@ -3,13 +3,13 @@
         "height": 4300,
         "width": 2
     },
-    "activeFile": "begin_game_spawn_cave.tmx",
+    "activeFile": "overworld_map.tmx",
     "automapping.whileDrawing": true,
     "expandedProjectPaths": [
-        "tilesets",
-        ".",
         "map_rules",
-        "rules"
+        ".",
+        "rules",
+        "tilesets"
     ],
     "file.lastUsedOpenFilter": "All Files (*)",
     "fileStates": {
@@ -21,27 +21,27 @@
             "scaleInEditor": 1
         },
         "begin_game_spawn_cave.tmx": {
-            "scale": 1,
-            "selectedLayer": 0,
+            "scale": 3,
+            "selectedLayer": 1,
             "viewCenter": {
-                "x": 522.5,
-                "y": 250
+                "x": 513.6666666666666,
+                "y": 238.66666666666666
             }
         },
         "map_rules/cave_rules.tmx": {
             "scale": 1,
             "selectedLayer": 0,
             "viewCenter": {
-                "x": 299.5,
-                "y": 183
+                "x": 410,
+                "y": 194
             }
         },
         "overworld_map.tmx": {
-            "scale": 1,
-            "selectedLayer": 0,
+            "scale": 1.5,
+            "selectedLayer": 5,
             "viewCenter": {
-                "x": 512.5,
-                "y": 255.5
+                "x": 155.33333333333334,
+                "y": 311.33333333333326
             }
         },
         "rules/cave_rules.tmx": {
@@ -58,12 +58,12 @@
             "scaleInEditor": 2
         },
         "tilesets/FDR_Overworld.tsx": {
-            "scaleInDock": 1,
+            "scaleInDock": 3,
             "scaleInEditor": 2
         },
         "tilesets/FDR_Overworld_Ground.tsx": {
             "scaleInDock": 1,
-            "scaleInEditor": 5.5
+            "scaleInEditor": 2
         },
         "tilesets/FDR_Overworld_Water.tsx": {
             "scaleInDock": 1,
@@ -83,19 +83,19 @@
     "map.width": 64,
     "openFiles": [
         "overworld_map.tmx",
-        "begin_game_spawn_cave.tmx",
-        "tilesets/FDR_Caves.tsx",
-        "map_rules/cave_rules.tmx"
+        "tilesets/FDR_Overworld_Ground.tsx",
+        "tilesets/FDR_Overworld.tsx",
+        "tilesets/FDR_Overworld_Water.tsx"
     ],
     "project": "void-destiny.tiled-project",
     "recentFiles": [
+        "tilesets/FDR_Overworld_Water.tsx",
+        "tilesets/FDR_Overworld.tsx",
+        "tilesets/FDR_Overworld_Ground.tsx",
         "overworld_map.tmx",
         "map_rules/cave_rules.tmx",
         "tilesets/FDR_Caves.tsx",
         "begin_game_spawn_cave.tmx",
-        "tilesets/FDR_Overworld_Water.tsx",
-        "tilesets/FDR_Overworld.tsx",
-        "tilesets/FDR_Overworld_Ground.tsx",
         "rules/cave_rules.tmx",
         "C:/Users/bergeronl/Documents/programmation/assets/lpc-terrains/lpc-terrains/terrain-v7.tsx"
     ],
