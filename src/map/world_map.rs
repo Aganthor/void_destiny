@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_ecs_tiled::{prelude::*, tiled::world::asset};
+use bevy_ecs_tiled::prelude::*;
 
 pub struct WorldMapPlugin;
 

@@ -1,26 +1,24 @@
 use bevy::{math::Vec4Swizzles, prelude::*};
 use bevy_ecs_tilemap::prelude::*;
-use rand::prelude::*;
-use noise::{Fbm, MultiFractal, NoiseFn, OpenSimplex, Perlin, Clamp, Blend, RidgedMulti};
-use std::collections::HashSet;
 use bevy_inspector_egui::{
-    bevy_inspector,
     DefaultInspectorConfigPlugin,
     bevy_egui::{EguiContext, EguiPlugin, EguiPrimaryContextPass, PrimaryEguiContext},
     prelude::*,
 };
+use noise::{Blend, Clamp, Fbm, MultiFractal, NoiseFn, OpenSimplex, Perlin, RidgedMulti};
+use rand::prelude::*;
+use std::collections::HashSet;
 
-use crate::{constants::*};
+use crate::constants::*;
 use crate::events::{MoveEvent, MoveLegal};
-use crate::{tile_type::*};
 use crate::states::GameState;
-
+use crate::tile_type::*;
 
 const TILE_SIZE: TilemapTileSize = TilemapTileSize { x: 32.0, y: 32.0 };
 // maximum number of chunks that can exist (derived from OVERWORLD_SIZE_* and CHUNK_SIZE)
-const MAX_SPAWNED_CHUNKS: usize = ((OVERWORLD_SIZE_WIDTH as usize + CHUNK_SIZE.x as usize - 1) / CHUNK_SIZE.x as usize)
+const MAX_SPAWNED_CHUNKS: usize = ((OVERWORLD_SIZE_WIDTH as usize + CHUNK_SIZE.x as usize - 1)
+    / CHUNK_SIZE.x as usize)
     * ((OVERWORLD_SIZE_HEIGHT as usize + CHUNK_SIZE.y as usize - 1) / CHUNK_SIZE.y as usize);
-
 
 #[derive(Reflect, Resource, InspectorOptions, Debug, Clone)]
 #[reflect(Resource, InspectorOptions)]
@@ -39,7 +37,7 @@ impl Default for OverWorldMapConfig {
     fn default() -> Self {
         let mut rng = rand::rng();
 
-        OverWorldMapConfig { 
+        OverWorldMapConfig {
             e_seed: rng.random(),
             m_seed: rng.random(),
             frequency: 2.50,
@@ -85,14 +83,15 @@ fn inspector_ui(world: &mut World) {
     else {
         return;
     };
-    let mut ctx = egui_context.clone();
-    egui::Window::new("Noise generation configuration").show(ctx.get_mut(), |ui| {
+    let mut egui_context = egui_context.clone();
+    egui::Window::new("Noise generation configuration").show(egui_context.get_mut(), |ui| {
         egui::ScrollArea::both().show(ui, |ui| {
-
-            bevy_inspector::ui_for_resource::<OverWorldMapConfig>(world, ui);
+            bevy_inspector_egui::bevy_inspector::ui_for_world(world, ui);
 
             if ui.add(egui::Button::new("Regenerate map!")).clicked() {
-                world.resource_mut::<NextState<GameState>>().set(GameState::DirtyMap);
+                world
+                    .resource_mut::<NextState<GameState>>()
+                    .set(GameState::DirtyMap);
             }
         });
     });
@@ -138,7 +137,7 @@ fn camera_movement(
 
         let Projection::Orthographic(ortho) = &mut *projection else {
             continue;
-        };        
+        };
 
         if keyboard_input.pressed(KeyCode::KeyZ) {
             ortho.scale += 0.1;
@@ -157,7 +156,7 @@ fn camera_movement(
         // Important! We need to restore the Z values when moving the camera around.
         // Bevy has a specific camera setup and this can mess with how our layers are shown.
         transform.translation.z = z;
-    }    
+    }
 }
 
 fn camera_pos_to_chunk_pos(camera_pos: &Vec2) -> IVec2 {
@@ -207,7 +206,6 @@ fn spawn_chunk_around_camera(
             }
         }
     }
-
 }
 
 ///
@@ -217,7 +215,7 @@ fn despawn_outofrange_chunks(
     mut commands: Commands,
     camera_query: Query<&Transform, With<Camera>>,
     chunks_query: Query<(Entity, &Transform)>,
-    mut chunk_manager: ResMut<ChunkManager>
+    mut chunk_manager: ResMut<ChunkManager>,
 ) {
     const CHUNK_DESPAWN_DISTANCE: f32 = (CHUNK_SIZE.x as f32 * TILE_SIZE.x) * 6.5;
 
@@ -235,12 +233,11 @@ fn despawn_outofrange_chunks(
     }
 }
 
-
 ///
 /// This function spawns a chunk of the overworld map.
-/// 
+///
 fn spawn_chunk(
-    commands: &mut Commands, 
+    commands: &mut Commands,
     asset_server: &AssetServer,
     map_config: &OverWorldMapConfig,
     chunk_pos: IVec2,
@@ -260,7 +257,7 @@ fn spawn_chunk(
         .set_octaves(map_config.octaves as usize)
         .set_frequency(map_config.frequency)
         .set_persistence(map_config.persistance)
-        .set_lacunarity(map_config.lacunarity);    
+        .set_lacunarity(map_config.lacunarity);
     let e_noise: Blend<f64, _, _, _, 2> = Blend::new(open_simplex, ridged, fbm_main);
     let m_noise = OpenSimplex::new(map_config.m_seed as u32);
     let temp_noise = OpenSimplex::new((map_config.m_seed as u32).wrapping_add(12345)); // different seed for temperature
@@ -271,8 +268,8 @@ fn spawn_chunk(
     let mut e_sum = 0.0_f64;
     let mut e_count = 0usize;
 
-    for x in 0..CHUNK_SIZE.x {        
-        for y in 0..CHUNK_SIZE.y {            
+    for x in 0..CHUNK_SIZE.x {
+        for y in 0..CHUNK_SIZE.y {
             let tile_pos = TilePos { x, y };
             let world_x = chunk_pos.x as f64 * CHUNK_SIZE.x as f64 + x as f64;
             let world_y = chunk_pos.y as f64 * CHUNK_SIZE.y as f64 + y as f64;
@@ -293,8 +290,12 @@ fn spawn_chunk(
 
             // update stats
             if e_value.is_finite() {
-                if e_value < e_min { e_min = e_value; }
-                if e_value > e_max { e_max = e_value; }
+                if e_value < e_min {
+                    e_min = e_value;
+                }
+                if e_value > e_max {
+                    e_max = e_value;
+                }
                 e_sum += e_value;
                 e_count += 1;
             }
@@ -348,7 +349,10 @@ fn spawn_chunk(
     // report simple elevation stats for this chunk
     if e_count > 0 {
         let avg = e_sum / e_count as f64;
-        info!("Chunk {:?} elevation stats: min={:.4}, max={:.4}, avg={:.4}", chunk_pos, e_min, e_max, avg);
+        info!(
+            "Chunk {:?} elevation stats: min={:.4}, max={:.4}, avg={:.4}",
+            chunk_pos, e_min, e_max, avg
+        );
     } else {
         info!("Chunk {:?} elevation stats: no samples", chunk_pos);
     }
@@ -365,33 +369,53 @@ fn smoothstep(edge0: f64, edge1: f64, x: f64) -> f64 {
 
 ///
 /// Simple function to determine the biome depending on elevation (e) and moisture (m).
-/// 
+///
 fn biome(e: f64, m: f64, t: f64) -> u32 {
     // soften water/coast/mountain thresholds
     // low elevation => more water: choose edges matching current elevation distribution
     let water_f = 1.0 - smoothstep(0.42, 0.50, e);
-    if water_f > 0.66 { return GroundTiles::DarkShallowWater as u32; }
-    if water_f > 0.33 { return GroundTiles::MediumShallowWater as u32; }
-    if water_f > 0.0  { return GroundTiles::LightShallowWater as u32; }
+    if water_f > 0.66 {
+        return GroundTiles::DarkShallowWater as u32;
+    }
+    if water_f > 0.33 {
+        return GroundTiles::MediumShallowWater as u32;
+    }
+    if water_f > 0.0 {
+        return GroundTiles::LightShallowWater as u32;
+    }
 
     // gentle beach band
     // beach sits just above the water band
     let beach_f = 1.0 - smoothstep(0.50, 0.56, e);
-    if beach_f > 0.5 && m < 0.45 { return GroundTiles::LightDirt as u32; }
+    if beach_f > 0.5 && m < 0.45 {
+        return GroundTiles::LightDirt as u32;
+    }
 
     // mountains with softened snowline
     let mountain_f = smoothstep(0.80, 0.86, e);
     if mountain_f > 0.8 {
-        if t < 0.3 { return GroundTiles::DarkSnowyMountain as u32; }
+        if t < 0.3 {
+            return GroundTiles::DarkSnowyMountain as u32;
+        }
         return GroundTiles::LightRockSnowyMountain as u32;
     }
 
     // Biomes based on moisture & temperature (unchanged logic, smoothed where helpful)
-    if t < 0.35 && m > 0.45 { return GroundTiles::BrightPineForest as u32; }
-    if m < 0.15 && t > 0.6 { return GroundTiles::LightSandyMountain as u32; }
-    if m > 0.7 { return GroundTiles::BrightLushForest as u32; }
-    if m > 0.45 { return GroundTiles::BrightDeciduousForest as u32; }
-    if e > 0.5 { return GroundTiles::MediumGrass as u32; }
+    if t < 0.35 && m > 0.45 {
+        return GroundTiles::BrightPineForest as u32;
+    }
+    if m < 0.15 && t > 0.6 {
+        return GroundTiles::LightSandyMountain as u32;
+    }
+    if m > 0.7 {
+        return GroundTiles::BrightLushForest as u32;
+    }
+    if m > 0.45 {
+        return GroundTiles::BrightDeciduousForest as u32;
+    }
+    if e > 0.5 {
+        return GroundTiles::MediumGrass as u32;
+    }
     GroundTiles::LightGrass as u32
 }
 
@@ -399,7 +423,7 @@ fn biome(e: f64, m: f64, t: f64) -> u32 {
 /// This method is used to check for event. The player system sends a MoveEvent and this system
 /// reads it. It then determines whether the destination tile is walkable or not. It then sends
 /// a MoveLegal event.
-/// 
+///
 fn move_event_listener(
     mut move_events: MessageReader<MoveEvent>,
     tilemap_q: Query<(
@@ -424,17 +448,22 @@ fn move_event_listener(
                 dest_in_map_pos.xy()
             };
             // Once we have a world position we can transform it into a possible tile position.
-            if let Some(tile_pos) =
-                TilePos::from_world_pos(&dest_in_map_pos, map_size, grid_size, &TILE_SIZE, map_type, &TilemapAnchor::None)
-            {
+            if let Some(tile_pos) = TilePos::from_world_pos(
+                &dest_in_map_pos,
+                map_size,
+                grid_size,
+                &TILE_SIZE,
+                map_type,
+                &TilemapAnchor::None,
+            ) {
                 if let Some(tile_entity) = tile_storage.get(&tile_pos) {
                     {
                         if let Ok(tile_texture) = tile_query.get(tile_entity) {
                             let walkable = tile_walkable(tile_texture.0);
                             if walkable {
-                                move_legal.write(MoveLegal { 
+                                move_legal.write(MoveLegal {
                                     legal_move: true,
-                                    destination: move_event.destination, 
+                                    destination: move_event.destination,
                                 });
                             } else {
                                 // move_legal.write(MoveLegal {
