@@ -8,11 +8,28 @@
     "expandedProjectPaths": [
         "map_rules",
         ".",
-        "rules",
-        "tilesets"
+        "tilesets",
+        "rules"
     ],
     "file.lastUsedOpenFilter": "All Files (*)",
     "fileStates": {
+        "/home/lucb/programming/godot/projects/Void-Destiny/assets/test/tiled_map_assets/overworld_map.tmx": {
+            "scale": 1.5929199218749999,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 511.9529166538946,
+                "y": 255.81951383992893
+            }
+        },
+        "/home/lucb/programming/godot/projects/Void-Destiny/assets/test/tiled_map_assets/tilesets/FDR_Overworld.tsx": {
+            "scaleInDock": 1
+        },
+        "/home/lucb/programming/godot/projects/Void-Destiny/assets/test/tiled_map_assets/tilesets/FDR_Overworld_Ground.tsx": {
+            "scaleInDock": 1
+        },
+        "/home/lucb/programming/godot/projects/Void-Destiny/assets/test/tiled_map_assets/tilesets/FDR_Overworld_Water.tsx": {
+            "scaleInDock": 1
+        },
         ":/automap-tiles.tsx": {
             "scaleInDock": 1
         },
@@ -37,11 +54,11 @@
             }
         },
         "overworld_map.tmx": {
-            "scale": 1.5,
-            "selectedLayer": 5,
+            "scale": 5.5,
+            "selectedLayer": 2,
             "viewCenter": {
-                "x": 155.33333333333334,
-                "y": 311.33333333333326
+                "x": 512.0909090909091,
+                "y": 255.9090909090909
             }
         },
         "rules/cave_rules.tmx": {
@@ -85,14 +102,16 @@
         "overworld_map.tmx",
         "tilesets/FDR_Overworld_Ground.tsx",
         "tilesets/FDR_Overworld.tsx",
-        "tilesets/FDR_Overworld_Water.tsx"
+        "tilesets/FDR_Overworld_Water.tsx",
+        "/home/lucb/programming/godot/projects/Void-Destiny/assets/test/tiled_map_assets/overworld_map.tmx"
     ],
     "project": "void-destiny.tiled-project",
     "recentFiles": [
-        "tilesets/FDR_Overworld_Water.tsx",
-        "tilesets/FDR_Overworld.tsx",
-        "tilesets/FDR_Overworld_Ground.tsx",
+        "/home/lucb/programming/godot/projects/Void-Destiny/assets/test/tiled_map_assets/overworld_map.tmx",
         "overworld_map.tmx",
+        "tilesets/FDR_Overworld_Ground.tsx",
+        "tilesets/FDR_Overworld.tsx",
+        "tilesets/FDR_Overworld_Water.tsx",
         "map_rules/cave_rules.tmx",
         "tilesets/FDR_Caves.tsx",
         "begin_game_spawn_cave.tmx",

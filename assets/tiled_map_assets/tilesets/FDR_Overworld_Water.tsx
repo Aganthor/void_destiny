@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<tileset version="1.10" tiledversion="1.11.2" name="FDR_Overworld_Water" tilewidth="16" tileheight="16" tilecount="168" columns="12">
+<tileset version="1.10" tiledversion="1.12.2" name="FDR_Overworld_Water" tilewidth="16" tileheight="16" tilecount="168" columns="12">
  <image source="FDR_Overworld_Water.png" trans="ff00ff" width="192" height="224"/>
  <tile id="0">
   <animation>
@@ -35,6 +35,18 @@
    <frame tileid="89" duration="100"/>
    <frame tileid="92" duration="100"/>
    <frame tileid="95" duration="100"/>
+  </animation>
+ </tile>
+ <tile id="49">
+  <animation>
+   <frame tileid="49" duration="100"/>
+   <frame tileid="52" duration="100"/>
+   <frame tileid="55" duration="100"/>
+   <frame tileid="58" duration="100"/>
+   <frame tileid="133" duration="100"/>
+   <frame tileid="136" duration="100"/>
+   <frame tileid="139" duration="100"/>
+   <frame tileid="142" duration="100"/>
   </animation>
  </tile>
  <wangsets>

@@ -152,7 +152,7 @@ fn spawn_chunk(mut commands: Commands, asset_server: Res<AssetServer>) {
     let mut tile_storage = TileStorage::empty(tile_map_size.into());
 
     // 1. Setup Noise Generators
-    let mut rng = rand::rng();
+    let rng = rand::rng();
     let seed = 19292992; //rng.random();
     let island_scale = 1.3; // Larger = bigger island
     let elev_gen = Fbm::<Perlin>::new(seed);
@@ -171,8 +171,8 @@ fn spawn_chunk(mut commands: Commands, asset_server: Res<AssetServer>) {
             let nx0 = 2.0 * (x as f64 / WIDTH as f64) - 1.0;
             let ny0 = 2.0 * (y as f64 / HEIGHT as f64) - 1.0;
             // Apply island scale to the coordinates used for noise sampling
-            let mut nx = nx0 / island_scale;
-            let mut ny = ny0 / island_scale;
+            let nx = nx0 / island_scale;
+            let ny = ny0 / island_scale;
 
             // Elevation with Masking
             // 1. Higher frequency for more crags
@@ -203,7 +203,7 @@ fn spawn_chunk(mut commands: Commands, asset_server: Res<AssetServer>) {
             // Warped Moisture
             let qx = warp_gen.get([nx * 2.0, ny * 2.0]) * 0.4;
             let qy = warp_gen.get([nx * 2.0 + 5.2, ny * 2.0 + 1.3]) * 0.4;
-            let mut m = (moist_gen.get([nx + qx, ny + qy]) + 1.0) / 2.0;
+            let m = (moist_gen.get([nx + qx, ny + qy]) + 1.0) / 2.0;
 
             // Terrain coupling: Lower areas near water are naturally wetter
             let height_factor = 1.0 - elevation_map[idx];

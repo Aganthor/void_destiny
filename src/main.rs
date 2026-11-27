@@ -51,8 +51,8 @@ fn main() {
         )
         .init_state::<GameState>()
         //.add_plugins(PlayerPlugin)
-        .add_plugins(WorldMapPlugin)
+        //.add_plugins(WorldMapPlugin)
         //.add_plugins(OverWorldMapPlugin)
-        //.add_plugins(WorldGenIslandPlugin)
+        .add_plugins(WorldGenIslandPlugin)
         .run();
 }
